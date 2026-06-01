@@ -79,7 +79,7 @@ export function Settings() {
           title: t('noUpdateTitle'),
           description: t('noUpdateDesc'),
           confirmText: 'OK',
-          cancelText: 'Close',
+          cancelText: null,
           variant: 'secondary'
         });
       }
@@ -88,7 +88,7 @@ export function Settings() {
         title: t('updateCheckFailedTitle'),
         description: t('updateCheckFailedDesc'),
         confirmText: 'OK',
-        cancelText: 'Close',
+        cancelText: null,
         variant: 'destructive'
       });
     } finally {

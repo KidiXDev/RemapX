@@ -1,8 +1,9 @@
 import { ConfirmationProvider } from '@/components/common/confirmation-provider';
 import { Titlebar } from '@/components/layout/titlebar';
 import { useSettingsStore } from '@/hooks/use-settings-store';
+import { invoke } from '@tauri-apps/api/core';
 import { useTranslation } from 'react-i18next';
-import { Suspense, useEffect } from 'react';
+import { Suspense, useEffect, useRef } from 'react';
 import { Outlet, useLocation } from 'react-router';
 
 export function RootLayout() {
@@ -11,6 +12,7 @@ export function RootLayout() {
   const theme = useSettingsStore((state) => state.theme);
   const ready = useSettingsStore((state) => state.ready);
   const hydrate = useSettingsStore((state) => state.hydrate);
+  const hasShownWindowRef = useRef(false);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -21,6 +23,14 @@ export function RootLayout() {
       console.error('Failed to hydrate settings store', err);
     });
   }, [hydrate]);
+
+  useEffect(() => {
+    if (!ready || hasShownWindowRef.current) return;
+    hasShownWindowRef.current = true;
+    invoke('show_main_window').catch((err) => {
+      console.error('Failed to show main window', err);
+    });
+  }, [ready]);
 
   const isSettingsPage = location.pathname === '/settings';
 

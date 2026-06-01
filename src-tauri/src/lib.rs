@@ -4,7 +4,7 @@ mod monitor;
 
 use db::{Profile, SettingsPayload};
 use gilrs::{Axis, Button, EventType, GamepadId, Gilrs};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -12,6 +12,8 @@ use std::sync::{Arc, OnceLock};
 use std::thread;
 use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter, State};
+use tauri::Manager;
+use tauri::{PhysicalPosition, PhysicalSize, Position, Size, WindowEvent};
 #[cfg(target_os = "windows")]
 use windows_sys::Win32::System::Threading::GetCurrentProcessId;
 #[cfg(target_os = "windows")]
@@ -104,6 +106,76 @@ struct ConnectedGamepad {
 struct ActiveProcess {
     pid: u32,
     exe_name: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct SavedWindowState {
+    x: i32,
+    y: i32,
+    width: u32,
+    height: u32,
+}
+
+fn load_saved_window_state() -> Option<SavedWindowState> {
+    let raw = db::get_settings()
+        .ok()
+        .and_then(|s| s.values.get("windowState").cloned())?;
+    serde_json::from_str::<SavedWindowState>(&raw).ok()
+}
+
+fn save_window_state(window: &tauri::WebviewWindow) -> Result<(), String> {
+    let pos = window.outer_position().map_err(|e| e.to_string())?;
+    let size = window.outer_size().map_err(|e| e.to_string())?;
+    let state = SavedWindowState {
+        x: pos.x,
+        y: pos.y,
+        width: size.width,
+        height: size.height,
+    };
+    let raw = serde_json::to_string(&state).map_err(|e| e.to_string())?;
+    db::save_setting("windowState", &raw)
+}
+
+fn state_visible_on_any_monitor(window: &tauri::WebviewWindow, state: &SavedWindowState) -> bool {
+    let Ok(monitors) = window.available_monitors() else {
+        return false;
+    };
+    let center_x = state.x + (state.width as i32 / 2);
+    let center_y = state.y + (state.height as i32 / 2);
+
+    monitors.into_iter().any(|m| {
+        let pos = m.position();
+        let size = m.size();
+        let left = pos.x;
+        let top = pos.y;
+        let right = pos.x + size.width as i32;
+        let bottom = pos.y + size.height as i32;
+        center_x >= left && center_x < right && center_y >= top && center_y < bottom
+    })
+}
+
+fn restore_window_state(window: &tauri::WebviewWindow) -> Result<(), String> {
+    let Some(state) = load_saved_window_state() else {
+        return Ok(());
+    };
+
+    let size = Size::Physical(PhysicalSize {
+        width: state.width,
+        height: state.height,
+    });
+    window.set_size(size).map_err(|e| e.to_string())?;
+
+    if state_visible_on_any_monitor(window, &state) {
+        let pos = Position::Physical(PhysicalPosition {
+            x: state.x,
+            y: state.y,
+        });
+        window.set_position(pos).map_err(|e| e.to_string())?;
+    } else {
+        window.center().map_err(|e| e.to_string())?;
+    }
+
+    Ok(())
 }
 
 static LAST_TRIGGER_TIMES: OnceLock<Mutex<HashMap<i64, Instant>>> = OnceLock::new();
@@ -405,6 +477,16 @@ fn trigger_button_action(app: AppHandle, button_id: i64) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+fn show_main_window(app: AppHandle) -> Result<(), String> {
+    let window = app
+        .get_webview_window("main")
+        .ok_or_else(|| "Main window not found".to_string())?;
+    window.show().map_err(|e| e.to_string())?;
+    let _ = window.set_focus();
+    Ok(())
+}
+
 fn button_to_id(button: Button) -> i64 {
     match button {
         Button::South => 0,
@@ -678,6 +760,16 @@ pub fn run() {
         })
         .setup(|app| {
             let handle = app.handle();
+            if let Some(main) = app.get_webview_window("main") {
+                let _ = restore_window_state(&main);
+                let main_for_events = main.clone();
+                main.on_window_event(move |event| match event {
+                    WindowEvent::Moved(_) | WindowEvent::Resized(_) | WindowEvent::CloseRequested { .. } => {
+                        let _ = save_window_state(&main_for_events);
+                    }
+                    _ => {}
+                });
+            }
             if let Ok(settings) = db::get_settings() {
                 if let Some(active) = settings.values.get("activeProfile") {
                     let _ = handle.emit("active-profile-changed", active);
@@ -689,6 +781,7 @@ pub fn run() {
             start_engine,
             stop_engine,
             trigger_button_action,
+            show_main_window,
             get_profiles,
             save_profile,
             create_profile,

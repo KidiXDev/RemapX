@@ -7,7 +7,7 @@ export interface ConfirmOptions {
   title: string;
   description: string;
   confirmText?: string;
-  cancelText?: string;
+  cancelText?: string | null;
   variant?: 'primary' | 'destructive' | 'secondary';
 }
 
@@ -86,13 +86,15 @@ export const ConfirmationProvider: React.FC<{ children: React.ReactNode }> = ({
             </div>
           </div>
           <div className="flex justify-end gap-2 border-t border-border-main/20 pt-4">
-            <Button
-              variant="secondary"
-              onClick={() => handleClose(false)}
-              className="px-4 py-2 text-xs font-bold"
-            >
-              {options?.cancelText || 'Cancel'}
-            </Button>
+            {options?.cancelText !== null && (
+              <Button
+                variant="secondary"
+                onClick={() => handleClose(false)}
+                className="px-4 py-2 text-xs font-bold"
+              >
+                {options?.cancelText || 'Cancel'}
+              </Button>
+            )}
             <Button
               variant={options?.variant || 'primary'}
               onClick={() => handleClose(true)}
