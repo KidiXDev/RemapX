@@ -3,7 +3,7 @@ mod input_sim;
 mod monitor;
 
 use db::{Profile, SettingsPayload};
-use gilrs::{Button, EventType, GamepadId, Gilrs};
+use gilrs::{Axis, Button, EventType, GamepadId, Gilrs};
 use serde::Serialize;
 use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -42,6 +42,12 @@ struct EngineState {
 struct GamepadButtonState {
     button_id: i64,
     pressed: bool,
+}
+
+#[derive(Clone, Serialize)]
+struct GamepadAxisState {
+    axis_id: u8,
+    value: f32,
 }
 
 #[derive(Clone, Serialize)]
@@ -148,6 +154,8 @@ fn start_engine(app: AppHandle, engine: State<'_, EngineState>) -> Result<(), St
         let mut polled_button_state: HashMap<(GamepadId, Button), bool> = HashMap::new();
         #[cfg(target_os = "windows")]
         let mut xinput_prev: [[bool; 17]; 4] = [[false; 17]; 4];
+        #[cfg(target_os = "windows")]
+        let mut xinput_axes_prev: [[f32; 4]; 4] = [[0.0; 4]; 4];
 
         while running.load(Ordering::Relaxed) {
             while let Some(ev) = gilrs.next_event() {
@@ -197,6 +205,23 @@ fn start_engine(app: AppHandle, engine: State<'_, EngineState>) -> Result<(), St
                                 GamepadButtonState {
                                     button_id,
                                     pressed: false,
+                                },
+                            );
+                        }
+                    }
+                    EventType::AxisChanged(axis, value, _) => {
+                        let axis_id = axis_to_id(axis);
+                        if axis_id != 99 {
+                            let val = if axis_id == 1 || axis_id == 3 {
+                                -value
+                            } else {
+                                value
+                            };
+                            let _ = app_handle.emit(
+                                "gamepad-axis-state",
+                                GamepadAxisState {
+                                    axis_id,
+                                    value: val,
                                 },
                             );
                         }
@@ -286,6 +311,27 @@ fn start_engine(app: AppHandle, engine: State<'_, EngineState>) -> Result<(), St
                             trigger_mapping_action(button_id as i64, &app_handle);
                         }
                     }
+
+                    let lx = state.Gamepad.sThumbLX as f32 / 32768.0;
+                    let ly = -(state.Gamepad.sThumbLY as f32 / 32768.0);
+                    let rx = state.Gamepad.sThumbRX as f32 / 32768.0;
+                    let ry = -(state.Gamepad.sThumbRY as f32 / 32768.0);
+                    let axes_now = [lx, ly, rx, ry];
+
+                    for axis_id in 0..4 {
+                        let prev_val = xinput_axes_prev[user_idx][axis_id];
+                        let now_val = axes_now[axis_id];
+                        if (now_val - prev_val).abs() > 0.015 {
+                            xinput_axes_prev[user_idx][axis_id] = now_val;
+                            let _ = app_handle.emit(
+                                "gamepad-axis-state",
+                                GamepadAxisState {
+                                    axis_id: axis_id as u8,
+                                    value: now_val,
+                                },
+                            );
+                        }
+                    }
                 }
             }
 
@@ -333,6 +379,16 @@ fn button_to_id(button: Button) -> i64 {
         Button::DPadDown => 14,
         Button::DPadLeft => 15,
         Button::DPadRight => 16,
+        _ => 99,
+    }
+}
+
+fn axis_to_id(axis: Axis) -> u8 {
+    match axis {
+        Axis::LeftStickX => 0,
+        Axis::LeftStickY => 1,
+        Axis::RightStickX => 2,
+        Axis::RightStickY => 3,
         _ => 99,
     }
 }

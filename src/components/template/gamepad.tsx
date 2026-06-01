@@ -7,6 +7,11 @@ interface GamepadStatePayload {
   pressed: boolean;
 }
 
+interface GamepadAxisPayload {
+  axis_id: number;
+  value: number;
+}
+
 interface GamepadProps {
   onButtonPress: (button: string) => void;
   onControlSelect?: (buttonId: number, label: string) => void;
@@ -21,23 +26,41 @@ export function Gamepad({
   const [pressedButtons, setPressedButtons] = useState<Record<number, boolean>>(
     {}
   );
+  const [leftStick, setLeftStick] = useState({ x: 0, y: 0 });
+  const [rightStick, setRightStick] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
-    let unlisten: (() => void) | undefined;
+    let unlistenButton: (() => void) | undefined;
+    let unlistenAxis: (() => void) | undefined;
 
     listen<GamepadStatePayload>('gamepad-button-state', (event) => {
       const { button_id, pressed } = event.payload;
       setPressedButtons((prev) => ({ ...prev, [button_id]: pressed }));
     })
       .then((fn) => {
-        unlisten = fn;
+        unlistenButton = fn;
       })
       .catch((err) => {
         console.error('Failed to subscribe gamepad-button-state', err);
       });
 
+    listen<GamepadAxisPayload>('gamepad-axis-state', (event) => {
+      const { axis_id, value } = event.payload;
+      if (axis_id === 0) setLeftStick((prev) => ({ ...prev, x: value }));
+      else if (axis_id === 1) setLeftStick((prev) => ({ ...prev, y: value }));
+      else if (axis_id === 2) setRightStick((prev) => ({ ...prev, x: value }));
+      else if (axis_id === 3) setRightStick((prev) => ({ ...prev, y: value }));
+    })
+      .then((fn) => {
+        unlistenAxis = fn;
+      })
+      .catch((err) => {
+        console.error('Failed to subscribe gamepad-axis-state', err);
+      });
+
     return () => {
-      if (unlisten) unlisten();
+      if (unlistenButton) unlistenButton();
+      if (unlistenAxis) unlistenAxis();
     };
   }, []);
 
@@ -48,6 +71,10 @@ export function Gamepad({
       const pads =
         typeof navigator !== 'undefined' ? navigator.getGamepads?.() : null;
       const next: Record<number, boolean> = {};
+      let lx = 0;
+      let ly = 0;
+      let rx = 0;
+      let ry = 0;
 
       if (pads) {
         for (const pad of pads) {
@@ -69,10 +96,19 @@ export function Gamepad({
           if (pad.buttons[14]?.pressed) next[15] = true;
           if (pad.buttons[15]?.pressed) next[16] = true;
           if (pad.buttons[16]?.pressed) next[10] = true;
+
+          if (pad.axes && pad.axes.length >= 4) {
+            lx = pad.axes[0] || 0;
+            ly = pad.axes[1] || 0;
+            rx = pad.axes[2] || 0;
+            ry = pad.axes[3] || 0;
+          }
         }
       }
 
       setPressedButtons(next);
+      setLeftStick({ x: lx, y: ly });
+      setRightStick({ x: rx, y: ry });
       raf = requestAnimationFrame(pollBrowserGamepad);
     };
 
@@ -105,6 +141,11 @@ export function Gamepad({
   const pressedDDown = !!pressedButtons[14];
   const pressedDLeft = !!pressedButtons[15];
   const pressedDRight = !!pressedButtons[16];
+
+  const isLeftStickActive = Math.sqrt(leftStick.x * leftStick.x + leftStick.y * leftStick.y) > 0.12;
+  const isRightStickActive = Math.sqrt(rightStick.x * rightStick.x + rightStick.y * rightStick.y) > 0.12;
+  const leftStickGlowing = pressedLS || isLeftStickActive;
+  const rightStickGlowing = pressedRS || isRightStickActive;
 
   const handleControlClick = (buttonId: number, label: string) => {
     onButtonPress(label);
@@ -413,28 +454,36 @@ export function Gamepad({
             stroke="var(--border-main)"
             strokeWidth="0.5"
           />
-          {/* Stick Cap */}
-          <circle
-            cx="36"
-            cy="44"
-            r="4.5"
-            fill={pressedLS ? 'var(--primary)' : '#2e2e33'}
-            filter={pressedLS ? 'url(#glow)' : undefined}
-            stroke={pressedLS ? 'var(--primary-hover)' : '#44444a'}
-            strokeWidth="0.55"
-            style={{ transformOrigin: '36px 44px' }}
-            className={`transition-all duration-150 hover:brightness-125 ${pressedLS ? 'scale-90' : ''}`}
-          />
-          {/* Inner Accent */}
-          <circle
-            cx="36"
-            cy="44"
-            r="2.2"
-            fill="none"
-            stroke="rgba(255, 255, 255, 0.15)"
-            strokeWidth="0.5"
-            pointerEvents="none"
-          />
+          {/* Translating Group for Cap and Accent */}
+          <g
+            style={{
+              transform: `translate(${leftStick.x * 2.2}px, ${leftStick.y * 2.2}px)`
+            }}
+            className="transition-transform duration-75 ease-out"
+          >
+            {/* Stick Cap */}
+            <circle
+              cx="36"
+              cy="44"
+              r="4.5"
+              fill={leftStickGlowing ? 'var(--primary)' : '#2e2e33'}
+              filter={leftStickGlowing ? 'url(#glow)' : undefined}
+              stroke={leftStickGlowing ? 'var(--primary-hover)' : '#44444a'}
+              strokeWidth="0.55"
+              style={{ transformOrigin: '36px 44px' }}
+              className={`transition-all duration-150 hover:brightness-125 ${pressedLS ? 'scale-90' : ''}`}
+            />
+            {/* Inner Accent */}
+            <circle
+              cx="36"
+              cy="44"
+              r="2.2"
+              fill="none"
+              stroke="rgba(255, 255, 255, 0.15)"
+              strokeWidth="0.5"
+              pointerEvents="none"
+            />
+          </g>
           <title>{getMappingText(11, 'Left Stick Click (LS / L3)')}</title>
         </g>
 
@@ -452,28 +501,36 @@ export function Gamepad({
             stroke="var(--border-main)"
             strokeWidth="0.5"
           />
-          {/* Stick Cap */}
-          <circle
-            cx="64"
-            cy="44"
-            r="4.5"
-            fill={pressedRS ? 'var(--primary)' : '#2e2e33'}
-            filter={pressedRS ? 'url(#glow)' : undefined}
-            stroke={pressedRS ? 'var(--primary-hover)' : '#44444a'}
-            strokeWidth="0.55"
-            style={{ transformOrigin: '64px 44px' }}
-            className={`transition-all duration-150 hover:brightness-125 ${pressedRS ? 'scale-90' : ''}`}
-          />
-          {/* Inner Accent */}
-          <circle
-            cx="64"
-            cy="44"
-            r="2.2"
-            fill="none"
-            stroke="rgba(255, 255, 255, 0.15)"
-            strokeWidth="0.5"
-            pointerEvents="none"
-          />
+          {/* Translating Group for Cap and Accent */}
+          <g
+            style={{
+              transform: `translate(${rightStick.x * 2.2}px, ${rightStick.y * 2.2}px)`
+            }}
+            className="transition-transform duration-75 ease-out"
+          >
+            {/* Stick Cap */}
+            <circle
+              cx="64"
+              cy="44"
+              r="4.5"
+              fill={rightStickGlowing ? 'var(--primary)' : '#2e2e33'}
+              filter={rightStickGlowing ? 'url(#glow)' : undefined}
+              stroke={rightStickGlowing ? 'var(--primary-hover)' : '#44444a'}
+              strokeWidth="0.55"
+              style={{ transformOrigin: '64px 44px' }}
+              className={`transition-all duration-150 hover:brightness-125 ${pressedRS ? 'scale-90' : ''}`}
+            />
+            {/* Inner Accent */}
+            <circle
+              cx="64"
+              cy="44"
+              r="2.2"
+              fill="none"
+              stroke="rgba(255, 255, 255, 0.15)"
+              strokeWidth="0.5"
+              pointerEvents="none"
+            />
+          </g>
           <title>{getMappingText(12, 'Right Stick Click (RS / R3)')}</title>
         </g>
 
