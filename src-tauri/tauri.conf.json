@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "gamepad-remapper",
+  "productName": "RemapX",
   "version": "0.1.0",
-  "identifier": "com.kidixdev.gamepad-remapper",
+  "identifier": "com.kidixdev.remapx",
   "build": {
     "beforeDevCommand": "bun run dev",
     "devUrl": "http://localhost:1420",
