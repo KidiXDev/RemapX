@@ -149,6 +149,21 @@ export function Settings() {
             ))}
           </div>
         </Card>
+
+        {/* About App Card */}
+        <Card title={t('aboutCardTitle')}>
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-zinc-200">RemapX</span>
+              <span className="text-xs font-mono font-semibold text-zinc-400 bg-zinc-900 px-2 py-0.5 rounded border border-border-main">
+                {__APP_VERSION__}
+              </span>
+            </div>
+            <p className="text-xs text-zinc-500">
+              {t('appVersionDescription')}
+            </p>
+          </div>
+        </Card>
       </div>
     </ContentLayout>
   );

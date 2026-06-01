@@ -37,5 +37,8 @@
       "title": "Aurora Green",
       "desc": "Aksen mint neon lembut dengan style glass panel."
     }
-  }
+  },
+  "aboutCardTitle": "Tentang RemapX",
+  "appVersionLabel": "Versi Aplikasi",
+  "appVersionDescription": "Versi rilis aplikasi yang saat ini terpasang."
 }

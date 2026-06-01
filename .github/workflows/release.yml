@@ -1,0 +1,67 @@
+name: 'publish'
+
+on:
+  push:
+    tags:
+      - 'v*' # Trigger on version tags starting with v (e.g., v1.0.0)
+
+jobs:
+  publish-tauri:
+    permissions:
+      contents: write # Required for creating/editing releases
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-pc-windows-msvc
+            args: "--target x86_64-pc-windows-msvc"
+            name: "Windows x64"
+            binary_path: "src-tauri/target/x86_64-pc-windows-msvc/release/remapx.exe"
+            portable_name: "remapx-x86_64-pc-windows-msvc-portable.zip"
+          - target: i686-pc-windows-msvc
+            args: "--target i686-pc-windows-msvc"
+            name: "Windows x86"
+            binary_path: "src-tauri/target/i686-pc-windows-msvc/release/remapx.exe"
+            portable_name: "remapx-i686-pc-windows-msvc-portable.zip"
+
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build and Release Tauri App
+        uses: tauri-apps/tauri-action@v0
+        id: tauri
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APP_VERSION: ${{ github.ref_name }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'RemapX ${{ github.ref_name }}'
+          releaseBody: 'Release ${{ github.ref_name }}'
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}
+
+      - name: Compress portable executable
+        run: |
+          Compress-Archive -Path ${{ matrix.binary_path }} -DestinationPath src-tauri/target/${{ matrix.target }}/release/${{ matrix.portable_name }}
+
+      - name: Upload portable executable to release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload ${{ github.ref_name }} src-tauri/target/${{ matrix.target }}/release/${{ matrix.portable_name }} --clobber

@@ -37,5 +37,8 @@
       "title": "Aurora Green",
       "desc": "Soothing neon mint highlights with glass panel styling"
     }
-  }
+  },
+  "aboutCardTitle": "About RemapX",
+  "appVersionLabel": "Application Version",
+  "appVersionDescription": "The currently installed version of RemapX."
 }
