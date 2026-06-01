@@ -40,5 +40,15 @@
   },
   "aboutCardTitle": "Tentang RemapX",
   "appVersionLabel": "Versi Aplikasi",
-  "appVersionDescription": "Versi rilis aplikasi yang saat ini terpasang."
+  "appVersionDescription": "Versi rilis aplikasi yang saat ini terpasang.",
+  "checkUpdate": "Periksa Pembaruan",
+  "checkingUpdate": "Memeriksa...",
+  "noUpdateTitle": "Versi Terbaru",
+  "noUpdateDesc": "Anda sudah menggunakan versi terbaru RemapX.",
+  "updateAvailableTitle": "Pembaruan Tersedia",
+  "updateAvailableDesc": "Versi baru RemapX ({{version}}) telah tersedia. Buka halaman rilis GitHub untuk mengunduh?",
+  "updateAvailableConfirm": "Unduh",
+  "updateAvailableCancel": "Nanti",
+  "updateCheckFailedTitle": "Gagal Memeriksa Pembaruan",
+  "updateCheckFailedDesc": "Gagal memeriksa pembaruan. Silakan coba lagi nanti."
 }

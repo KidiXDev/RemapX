@@ -40,5 +40,15 @@
   },
   "aboutCardTitle": "About RemapX",
   "appVersionLabel": "Application Version",
-  "appVersionDescription": "The currently installed version of RemapX."
+  "appVersionDescription": "The currently installed version of RemapX.",
+  "checkUpdate": "Check for Updates",
+  "checkingUpdate": "Checking...",
+  "noUpdateTitle": "Up to Date",
+  "noUpdateDesc": "You are running the latest version of RemapX.",
+  "updateAvailableTitle": "Update Available",
+  "updateAvailableDesc": "A new version of RemapX ({{version}}) is available. Open GitHub releases to download?",
+  "updateAvailableConfirm": "Download",
+  "updateAvailableCancel": "Later",
+  "updateCheckFailedTitle": "Update Check Failed",
+  "updateCheckFailedDesc": "Unable to check for updates. Please try again later."
 }
