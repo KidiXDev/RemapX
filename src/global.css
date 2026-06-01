@@ -1,1 +1,90 @@
 @import "tailwindcss";
+
+:root {
+  /* Default theme: Carbon Dark */
+  --bg-main: #09090b;
+  --bg-card: rgba(24, 24, 27, 0.4);
+  --bg-header: rgba(9, 9, 11, 0.5);
+  --border-main: rgba(39, 39, 42, 0.6);
+  --border-hover: rgba(63, 63, 70, 0.8);
+  
+  --primary: #06b6d4;
+  --primary-hover: #22d3ee;
+  --primary-glow: rgba(34, 211, 238, 0.2);
+  --primary-bg: rgba(8, 51, 68, 0.2);
+  --primary-border: rgba(21, 94, 117, 0.4);
+  --primary-text: #22d3ee;
+}
+
+[data-theme="dark"] {
+  --bg-main: #09090b;
+  --bg-card: rgba(24, 24, 27, 0.4);
+  --bg-header: rgba(9, 9, 11, 0.5);
+  --border-main: rgba(39, 39, 42, 0.6);
+  --border-hover: rgba(63, 63, 70, 0.8);
+  
+  --primary: #06b6d4;
+  --primary-hover: #22d3ee;
+  --primary-glow: rgba(34, 211, 238, 0.2);
+  --primary-bg: rgba(8, 51, 68, 0.2);
+  --primary-border: rgba(21, 94, 117, 0.4);
+  --primary-text: #22d3ee;
+}
+
+[data-theme="cyber"] {
+  --bg-main: #0c0a05;
+  --bg-card: rgba(33, 26, 12, 0.4);
+  --bg-header: rgba(12, 10, 5, 0.5);
+  --border-main: rgba(78, 60, 24, 0.6);
+  --border-hover: rgba(120, 90, 30, 0.8);
+  
+  --primary: #d97706;
+  --primary-hover: #f59e0b;
+  --primary-glow: rgba(245, 158, 11, 0.2);
+  --primary-bg: rgba(69, 39, 0, 0.25);
+  --primary-border: rgba(146, 64, 14, 0.4);
+  --primary-text: #fbbf24;
+}
+
+[data-theme="neon"] {
+  --bg-main: #030905;
+  --bg-card: rgba(8, 28, 16, 0.4);
+  --bg-header: rgba(3, 9, 5, 0.5);
+  --border-main: rgba(16, 52, 30, 0.6);
+  --border-hover: rgba(30, 84, 48, 0.8);
+  
+  --primary: #10b981;
+  --primary-hover: #34d399;
+  --primary-glow: rgba(52, 211, 153, 0.2);
+  --primary-bg: rgba(2, 44, 25, 0.25);
+  --primary-border: rgba(6, 95, 70, 0.4);
+  --primary-text: #34d399;
+}
+
+@theme {
+  --color-bg-main: var(--bg-main);
+  --color-bg-card: var(--bg-card);
+  --color-bg-header: var(--bg-header);
+  --color-border-main: var(--border-main);
+  --color-border-hover: var(--border-hover);
+
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-glow: var(--primary-glow);
+  --color-primary-bg: var(--primary-bg);
+  --color-primary-border: var(--primary-border);
+  --color-primary-text: var(--primary-text);
+
+  --animate-fade-in: fade-in 0.3s ease-out;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}

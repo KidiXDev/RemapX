@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Save, RotateCcw, ChevronsRight, Trash2, Play } from 'lucide-react';
 
 interface Mapping {
   id: string;
@@ -81,9 +82,9 @@ export function Remap() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in max-w-6xl mx-auto">
       {/* Header Info */}
-      <section className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <section className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-2xl font-extrabold text-zinc-100 tracking-tight">
             Remap Canvas
@@ -93,12 +94,14 @@ export function Remap() {
             assignments.
           </p>
         </div>
-        <div className="flex gap-2">
-          <button className="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-zinc-950 text-xs font-bold rounded-lg transition-colors cursor-pointer">
-            Save Config
+        <div className="flex gap-2.5">
+          <button className="flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary-hover text-zinc-950 text-xs font-bold rounded-xl transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-primary/10">
+            <Save className="w-3.5 h-3.5" />
+            <span>Save Config</span>
           </button>
-          <button className="px-4 py-2 bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-300 text-xs font-bold rounded-lg transition-colors cursor-pointer">
-            Revert Changes
+          <button className="flex items-center gap-1.5 px-4 py-2 bg-zinc-900 border border-border-main hover:border-border-hover text-zinc-300 text-xs font-bold rounded-xl transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98]">
+            <RotateCcw className="w-3.5 h-3.5 text-zinc-400" />
+            <span>Revert Changes</span>
           </button>
         </div>
       </section>
@@ -106,19 +109,20 @@ export function Remap() {
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Hand Controller Graphic */}
-        <div className="lg:col-span-5 rounded-2xl bg-zinc-900/30 border border-zinc-850 p-6 flex flex-col items-center justify-between min-h-[450px]">
+        <div className="lg:col-span-5 rounded-2xl bg-bg-card border border-border-main p-6 flex flex-col items-center justify-between min-h-[450px]">
           <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-widest self-start">
             Interactive Mapping Blueprint
           </span>
 
           {/* Simple Visual Controller Drawing using SVG */}
           <div className="relative w-80 h-48 my-8 group">
-            {/* Pulsing highlights for buttons */}
-            <div className="absolute top-1/4 left-1/4 w-4 h-4 bg-cyan-400/20 rounded-full animate-ping pointer-events-none" />
-            <div className="absolute top-1/4 right-1/4 w-4 h-4 bg-purple-400/20 rounded-full animate-ping pointer-events-none" />
+            {/* Pulsing highlights for buttons using theme variables */}
+            <div className="absolute top-1/4 left-1/4 w-4 h-4 bg-primary/20 rounded-full animate-ping pointer-events-none" />
+            <div className="absolute top-1/4 right-1/4 w-4 h-4 bg-primary/15 rounded-full animate-ping pointer-events-none" />
 
             <svg
-              className="w-full h-full text-zinc-700 drop-shadow-[0_0_15px_rgba(34,211,238,0.1)] transition-colors group-hover:text-zinc-650"
+              className="w-full h-full text-zinc-700 transition-colors group-hover:text-zinc-600"
+              style={{ filter: 'drop-shadow(0px 0px 12px var(--primary-glow))' }}
               viewBox="0 0 100 60"
               fill="currentColor"
             >
@@ -141,69 +145,69 @@ export function Remap() {
                 opacity="0.3"
               />
               {/* D-Pad */}
-              <path d="M 22 28 h 6 v 6 h -6 z" fill="#18181b" />
-              <path d="M 24 26 h 2 v 10 h -2 z" fill="#18181b" />
+              <path d="M 22 28 h 6 v 6 h -6 z" fill="var(--bg-main)" />
+              <path d="M 24 26 h 2 v 10 h -2 z" fill="var(--bg-main)" />
               {/* Left Stick */}
               <circle
                 cx="34"
                 cy="38"
                 r="6"
-                fill="#09090b"
-                stroke="#22d3ee"
+                fill="var(--bg-main)"
+                stroke="var(--primary)"
                 strokeWidth="0.75"
               />
-              <circle cx="34" cy="38" r="3" fill="#27272a" />
+              <circle cx="34" cy="38" r="3" fill="var(--border-main)" />
               {/* Right Stick */}
               <circle
                 cx="66"
                 cy="38"
                 r="6"
-                fill="#09090b"
-                stroke="#22d3ee"
+                fill="var(--bg-main)"
+                stroke="var(--primary)"
                 strokeWidth="0.75"
               />
-              <circle cx="66" cy="38" r="3" fill="#27272a" />
+              <circle cx="66" cy="38" r="3" fill="var(--border-main)" />
               {/* Action Buttons */}
               <circle cx="78" cy="28" r="2" fill="#e4e4e7" /> {/* Y */}
               <circle cx="74" cy="32" r="2" fill="#e4e4e7" /> {/* X */}
               <circle cx="82" cy="32" r="2" fill="#e4e4e7" /> {/* B */}
-              <circle cx="78" cy="36" r="2" fill="#22d3ee" /> {/* A */}
+              <circle cx="78" cy="36" r="2" fill="var(--primary)" /> {/* A */}
             </svg>
 
             {/* Simulated Interactive buttons on overlay */}
             <button
               onClick={() => addSimulatedPress('L-Stick')}
-              className="absolute top-[55%] left-[30%] w-7 h-7 rounded-full bg-cyan-400/10 hover:bg-cyan-400/30 border border-cyan-400/20 cursor-pointer transition-all"
+              className="absolute top-[55%] left-[30%] w-7 h-7 rounded-full bg-primary-bg/50 hover:bg-primary/20 border border-primary-border/60 cursor-pointer transition-all"
               title="Click to simulate Left Stick input"
             />
             <button
               onClick={() => addSimulatedPress('R-Stick')}
-              className="absolute top-[55%] right-[30%] w-7 h-7 rounded-full bg-cyan-400/10 hover:bg-cyan-400/30 border border-cyan-400/20 cursor-pointer transition-all"
+              className="absolute top-[55%] right-[30%] w-7 h-7 rounded-full bg-primary-bg/50 hover:bg-primary/20 border border-primary-border/60 cursor-pointer transition-all"
               title="Click to simulate Right Stick input"
             />
             <button
               onClick={() => addSimulatedPress('A Button')}
-              className="absolute top-[52%] right-[19%] w-5 h-5 rounded-full bg-cyan-400/10 hover:bg-cyan-400/30 border border-cyan-400/20 cursor-pointer transition-all"
+              className="absolute top-[52%] right-[19%] w-5 h-5 rounded-full bg-primary-bg/50 hover:bg-primary/20 border border-primary-border/60 cursor-pointer transition-all"
               title="Click to simulate A button input"
             />
           </div>
 
-          <div className="text-center text-xs text-zinc-500 px-4">
+          <div className="text-center text-xs text-zinc-500 px-4 leading-relaxed">
             Click on the highlighted stick circles or buttons on the blueprint
             to test driver injection and write diagnostic logs.
           </div>
         </div>
 
         {/* Right Hand Configuration / Mapping List */}
-        <div className="lg:col-span-7 rounded-2xl bg-zinc-900/30 border border-zinc-850 overflow-hidden flex flex-col h-[450px]">
+        <div className="lg:col-span-7 rounded-2xl bg-bg-card border border-border-main overflow-hidden flex flex-col h-[450px]">
           {/* Tab Selector */}
-          <div className="flex border-b border-zinc-800 bg-zinc-900/20 shrink-0">
+          <div className="flex border-b border-border-main bg-bg-header shrink-0">
             <button
               onClick={() => setActiveTab('bindings')}
               className={`flex-1 py-3.5 text-xs font-bold border-b-2 transition-all cursor-pointer ${
                 activeTab === 'bindings'
-                  ? 'border-cyan-400 text-cyan-400'
-                  : 'border-transparent text-zinc-400 hover:text-zinc-300'
+                  ? 'border-primary-text text-primary-text bg-primary-bg/5'
+                  : 'border-transparent text-zinc-400 hover:text-zinc-200'
               }`}
             >
               Active Key Bindings ({mappings.length})
@@ -212,8 +216,8 @@ export function Remap() {
               onClick={() => setActiveTab('live')}
               className={`flex-1 py-3.5 text-xs font-bold border-b-2 transition-all cursor-pointer ${
                 activeTab === 'live'
-                  ? 'border-cyan-400 text-cyan-400'
-                  : 'border-transparent text-zinc-400 hover:text-zinc-300'
+                  ? 'border-primary-text text-primary-text bg-primary-bg/5'
+                  : 'border-transparent text-zinc-400 hover:text-zinc-200'
               }`}
             >
               Diagnostics & Input Monitor
@@ -224,7 +228,7 @@ export function Remap() {
           <div className="flex-1 overflow-y-auto p-5">
             {activeTab === 'bindings' ? (
               <div className="space-y-2">
-                <div className="grid grid-cols-12 text-[10px] font-semibold text-zinc-650 uppercase tracking-widest px-3 mb-2">
+                <div className="grid grid-cols-12 text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-3 mb-2">
                   <div className="col-span-5">Gamepad Trigger</div>
                   <div className="col-span-4">Mapped Output</div>
                   <div className="col-span-3 text-right">Type</div>
@@ -233,31 +237,19 @@ export function Remap() {
                 {mappings.map((map) => (
                   <div
                     key={map.id}
-                    className="grid grid-cols-12 items-center bg-zinc-900/10 border border-zinc-850/60 rounded-xl px-4 py-2.5 hover:border-zinc-800 hover:bg-zinc-900/40 transition-colors"
+                    className="grid grid-cols-12 items-center bg-zinc-950/20 border border-border-main/50 rounded-xl px-4 py-2.5 hover:border-border-hover hover:bg-zinc-900/10 transition-colors"
                   >
                     <div className="col-span-5 text-xs font-bold text-zinc-200">
                       {map.source}
                     </div>
                     <div className="col-span-4 flex items-center gap-2">
-                      <svg
-                        className="w-3 h-3 text-cyan-400"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={3}
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M13 5l7 7-7 7M5 5l7 7-7 7"
-                        />
-                      </svg>
+                      <ChevronsRight className="w-3.5 h-3.5 text-primary-text animate-pulse" />
                       <span className="text-xs font-semibold text-zinc-300">
                         {map.target}
                       </span>
                     </div>
                     <div className="col-span-3 text-right">
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-zinc-900 text-zinc-500 border border-zinc-800">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-zinc-900/60 text-zinc-400 border border-border-main/60">
                         {map.type}
                       </span>
                     </div>
@@ -266,32 +258,34 @@ export function Remap() {
               </div>
             ) : (
               <div className="h-full flex flex-col justify-between">
-                <div className="font-mono text-[11px] space-y-1 bg-black/30 p-4 rounded-xl border border-zinc-900 flex-1 overflow-y-auto min-h-[250px]">
+                <div className="font-mono text-[11px] space-y-1 bg-zinc-950/50 p-4 rounded-xl border border-border-main flex-1 overflow-y-auto min-h-[250px]">
                   {logs.map((log, idx) => (
                     <div
                       key={idx}
                       className={
                         log.includes('Pressed')
-                          ? 'text-cyan-400 font-bold'
-                          : 'text-zinc-400'
+                          ? 'text-primary-text font-bold'
+                          : 'text-zinc-450'
                       }
                     >
                       {log}
                     </div>
                   ))}
                 </div>
-                <div className="flex gap-2 mt-4 shrink-0">
+                <div className="flex gap-2.5 mt-4 shrink-0">
                   <button
                     onClick={() => setLogs([])}
-                    className="px-3.5 py-1.5 rounded-lg bg-zinc-850 hover:bg-zinc-800 text-xs font-bold text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer border border-zinc-800"
+                    className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-xs font-bold text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer border border-border-main"
                   >
-                    Clear Diagnostics
+                    <Trash2 className="w-3.5 h-3.5 text-zinc-500" />
+                    <span>Clear Diagnostics</span>
                   </button>
                   <button
                     onClick={() => addSimulatedPress('D-Pad Right')}
-                    className="px-3.5 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-xs font-bold text-cyan-400 transition-colors cursor-pointer"
+                    className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-primary-bg hover:bg-primary/20 text-xs font-bold text-primary-text transition-colors cursor-pointer border border-primary-border/40"
                   >
-                    Test Input Injection
+                    <Play className="w-3.5 h-3.5" />
+                    <span>Test Input Injection</span>
                   </button>
                 </div>
               </div>
@@ -302,4 +296,5 @@ export function Remap() {
     </div>
   );
 }
+
 export default Remap;

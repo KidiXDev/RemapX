@@ -3,7 +3,6 @@ import { createHashRouter, RouterProvider } from 'react-router';
 import RootLayout from './components/layout/root-layout';
 
 // Lazy load the pages for modular, scalable code splitting
-const Home = lazy(() => import('./pages/home'));
 const Remap = lazy(() => import('./pages/remap'));
 const Settings = lazy(() => import('./pages/settings'));
 
@@ -15,10 +14,6 @@ const router = createHashRouter([
     children: [
       {
         index: true,
-        element: <Home />
-      },
-      {
-        path: 'remap',
         element: <Remap />
       },
       {
