@@ -49,7 +49,7 @@ export function Titlebar({ isSettingsPage }: TitlebarProps) {
         <div className="w-5 h-5 rounded-md bg-linear-to-tr from-primary to-primary-hover flex items-center justify-center">
           <Gamepad2 className="w-3 h-3 text-zinc-950" />
         </div>
-        <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-zinc-200">
+        <span className="text-xs font-semibold tracking-[0.18em] uppercase text-zinc-200">
           RemapX
         </span>
       </div>

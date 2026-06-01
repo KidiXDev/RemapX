@@ -408,12 +408,16 @@ export function Remap() {
                 <Button
                   variant="secondary"
                   onClick={onToggleEngine}
-                  title={engineRunning ? "Stop Input Remapping Engine" : "Start Input Remapping Engine"}
-                  className={cn(
-                    "h-9 w-9 p-0 flex items-center justify-center rounded-xl border transition-all duration-300 shadow-md",
+                  title={
                     engineRunning
-                      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20 hover:border-emerald-500/50 shadow-emerald-500/5"
-                      : "bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/20 hover:border-red-500/50 shadow-red-500/5"
+                      ? 'Stop Input Remapping Engine'
+                      : 'Start Input Remapping Engine'
+                  }
+                  className={cn(
+                    'h-9 w-9 p-0 flex items-center justify-center rounded-xl border transition-all duration-300 shadow-md',
+                    engineRunning
+                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20 hover:border-emerald-500/50 shadow-emerald-500/5'
+                      : 'bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/20 hover:border-red-500/50 shadow-red-500/5'
                   )}
                 >
                   {engineRunning ? (
@@ -502,7 +506,7 @@ export function Remap() {
                         <p className="text-xs text-zinc-400 font-semibold">
                           No keybindings configured
                         </p>
-                        <p className="text-[10px] text-zinc-500 mt-1 max-w-[280px] mx-auto leading-relaxed">
+                        <p className="text-xs text-zinc-500 mt-1 max-w-[280px] mx-auto leading-relaxed">
                           Click any highlighted button on the gamepad canvas
                           above to bind it to a key.
                         </p>
@@ -516,7 +520,7 @@ export function Remap() {
                     ) : (
                       <div className="space-y-2">
                         {/* Table Header */}
-                        <div className="grid grid-cols-12 text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-4 mb-1">
+                        <div className="grid grid-cols-12 text-xs font-bold text-zinc-500 uppercase tracking-widest px-4 mb-1">
                           <div className="col-span-4">Gamepad Control</div>
                           <div className="col-span-1 text-center"></div>
                           <div className="col-span-4">Mapped Key</div>
@@ -533,7 +537,7 @@ export function Remap() {
                             >
                               {/* Gamepad Input */}
                               <div className="col-span-4 flex items-center">
-                                <span className="inline-flex items-center justify-center min-w-10 h-7 px-2.5 rounded-full bg-primary-bg border border-primary-border/80 text-primary-text font-bold text-[10px] uppercase shadow-sm">
+                                <span className="inline-flex items-center justify-center min-w-10 h-7 px-2.5 rounded-full bg-primary-bg border border-primary-border/80 text-primary-text font-bold text-xs uppercase shadow-sm">
                                   {buttonLabelMap[map.button_id] ||
                                     `Button ${map.button_id}`}
                                 </span>
@@ -546,14 +550,14 @@ export function Remap() {
 
                               {/* Mapped Keyboard Keycap */}
                               <div className="col-span-4 flex items-center">
-                                <kbd className="min-w-[32px] h-7 px-2.5 flex items-center justify-center rounded-lg bg-zinc-950 border border-zinc-700 text-zinc-100 text-[10px] font-mono font-bold shadow-md shadow-black/60 uppercase">
+                                <kbd className="min-w-[32px] h-7 px-2.5 flex items-center justify-center rounded-lg bg-zinc-950 border border-zinc-700 text-zinc-100 text-xs font-mono font-bold shadow-md shadow-black/60 uppercase">
                                   {map.key_str}
                                 </kbd>
                               </div>
 
                               {/* Mapping Type Tag */}
                               <div className="col-span-2">
-                                <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-zinc-950 text-zinc-400 border border-border-main/40 uppercase tracking-wider">
+                                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-zinc-950 text-zinc-400 border border-border-main/40 uppercase tracking-wider">
                                   {map.mapping_type}
                                 </span>
                               </div>
@@ -576,21 +580,21 @@ export function Remap() {
                   </div>
                 ) : (
                   /* Terminal interface for logs */
-                  <div className="flex flex-col rounded-xl border border-border-main/70 bg-zinc-950/70 overflow-hidden font-mono text-[11px] h-[510px]">
+                  <div className="flex flex-col rounded-xl border border-border-main/70 bg-zinc-950/70 overflow-hidden font-mono text-xs h-[510px]">
                     {/* Terminal Header */}
                     <div className="flex items-center justify-between bg-zinc-900/60 border-b border-border-main/70 px-4 py-2 shrink-0">
                       <div className="flex items-center gap-1.5">
                         <span className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
                         <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/60" />
                         <span className="w-2.5 h-2.5 rounded-full bg-green-500/60" />
-                        <span className="text-[9px] font-bold text-zinc-400 ml-2 tracking-wider flex items-center gap-1">
+                        <span className="text-xs font-bold text-zinc-400 ml-2 tracking-wider flex items-center gap-1">
                           <Terminal className="w-3.5 h-3.5" />
                           <span>DAEMON_LOG_STREAM</span>
                         </span>
                       </div>
                       <button
                         onClick={() => setLogs([])}
-                        className="text-[9px] font-bold text-zinc-400 hover:text-zinc-200 transition bg-zinc-900 border border-border-main px-2 py-0.5 rounded cursor-pointer"
+                        className="text-xs font-bold text-zinc-400 hover:text-zinc-200 transition bg-zinc-900 border border-border-main px-2 py-0.5 rounded cursor-pointer"
                       >
                         Clear Logs
                       </button>
@@ -639,10 +643,10 @@ export function Remap() {
             {/* Active Profile Configuration */}
             <Card className="flex flex-col gap-4 border-border-main/70 bg-bg-card">
               <div className="flex items-center justify-between border-b border-border-main/30 pb-2">
-                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+                <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
                   Profile Configuration
                 </span>
-                <span className="text-[10px] font-bold text-primary-text bg-primary-bg px-2 py-0.5 rounded-full border border-primary-border">
+                <span className="text-xs font-bold text-primary-text bg-primary-bg px-2 py-0.5 rounded-full border border-primary-border">
                   {active.name}
                 </span>
               </div>
@@ -705,7 +709,7 @@ export function Remap() {
                 {/* Inline Rename Form */}
                 {isRenaming && (
                   <div className="p-3 rounded-xl border border-primary-border bg-primary-bg/10 space-y-2 animate-fade-in">
-                    <span className="text-[10px] font-bold text-primary-text uppercase tracking-wider">
+                    <span className="text-xs font-bold text-primary-text uppercase tracking-wider">
                       Rename Profile
                     </span>
                     <div className="flex gap-2">
@@ -719,14 +723,14 @@ export function Remap() {
                       <Button
                         variant="primary"
                         onClick={onRenameProfile}
-                        className="h-8 py-0 px-3 text-[10px]"
+                        className="h-8 py-0 px-3 text-xs"
                       >
                         Save
                       </Button>
                       <Button
                         variant="secondary"
                         onClick={() => setIsRenaming(false)}
-                        className="h-8 py-0 px-3 text-[10px]"
+                        className="h-8 py-0 px-3 text-xs"
                       >
                         Cancel
                       </Button>
@@ -746,7 +750,7 @@ export function Remap() {
                   </Button>
                 ) : (
                   <div className="p-3 rounded-xl border border-border-main bg-zinc-900/20 space-y-2 animate-fade-in">
-                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+                    <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">
                       Create Profile
                     </span>
                     <div className="flex gap-2">
@@ -760,14 +764,14 @@ export function Remap() {
                       <Button
                         variant="primary"
                         onClick={onCreateProfile}
-                        className="h-8 py-0 px-3 text-[10px]"
+                        className="h-8 py-0 px-3 text-xs"
                       >
                         Create
                       </Button>
                       <Button
                         variant="secondary"
                         onClick={() => setIsCreatingProfile(false)}
-                        className="h-8 py-0 px-3 text-[10px]"
+                        className="h-8 py-0 px-3 text-xs"
                       >
                         Cancel
                       </Button>
@@ -807,7 +811,7 @@ export function Remap() {
             {/* Target Applications / Auto-Switching */}
             <Card className="flex flex-col gap-4 border-border-main/70 bg-bg-card">
               <div className="flex items-center justify-between border-b border-border-main/30 pb-2">
-                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+                <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
                   Target Applications
                 </span>
                 <Button
@@ -817,7 +821,7 @@ export function Remap() {
                     setProcessQuery('');
                     loadProcesses('');
                   }}
-                  className="py-1 px-2.5 h-7 rounded-lg text-[9px] font-bold"
+                  className="py-1 px-2.5 h-7 rounded-lg text-xs font-bold"
                 >
                   <Plus className="w-3 h-3 text-zinc-400" />
                   <span>Browse App</span>
@@ -826,17 +830,13 @@ export function Remap() {
 
               {targetList.length === 0 ? (
                 <div className="p-3 border border-dashed border-border-main/40 rounded-xl bg-zinc-950/10 text-center">
-                  <p className="text-xs text-zinc-400 font-semibold">
+                  <p className="text-xs py-4 text-zinc-400 font-semibold">
                     Global Mode Active
-                  </p>
-                  <p className="text-[9px] text-zinc-500 mt-1 max-w-[220px] mx-auto leading-normal">
-                    This profile applies globally. Bind a running EXE to enable
-                    auto-profile switching.
                   </p>
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <p className="text-[10px] text-zinc-500">
+                  <p className="text-xs text-zinc-500">
                     This profile activates automatically when any of these
                     executables are focused:
                   </p>
@@ -846,7 +846,7 @@ export function Remap() {
                         key={target}
                         className="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 rounded-lg text-xs font-semibold bg-zinc-950 border border-border-main/50 text-zinc-300 hover:border-zinc-500 hover:text-zinc-100 transition"
                       >
-                        <span className="font-mono text-[10px]">{target}</span>
+                        <span className="font-mono text-xs">{target}</span>
                         <button
                           onClick={() => onRemoveTarget(target)}
                           className="text-zinc-500 hover:text-red-400 p-0.5 rounded transition cursor-pointer"
@@ -866,14 +866,14 @@ export function Remap() {
               <div className="flex items-center justify-between border-b border-border-main/30 pb-2">
                 <div className="flex items-center gap-1.5">
                   <GamepadIcon className="w-4 h-4 text-zinc-400" />
-                  <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+                  <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
                     Hardware Status
                   </span>
                 </div>
                 <button
                   onClick={loadConnectedGamepads}
                   disabled={isLoadingGamepads}
-                  className="text-zinc-500 hover:text-primary-text transition flex items-center gap-1 text-[10px] font-bold disabled:opacity-50 cursor-pointer"
+                  className="text-zinc-500 hover:text-primary-text transition flex items-center gap-1 text-xs font-bold disabled:opacity-50 cursor-pointer"
                 >
                   <RefreshCw
                     className={`w-3 h-3 ${isLoadingGamepads ? 'animate-spin' : ''}`}
@@ -894,7 +894,7 @@ export function Remap() {
                   <p className="text-xs text-zinc-500 font-semibold">
                     No controller detected
                   </p>
-                  <p className="text-[9px] text-zinc-600 mt-1 max-w-[200px] leading-normal">
+                  <p className="text-xs text-zinc-600 mt-1 max-w-[200px] leading-normal">
                     Connect a controller via USB or Bluetooth and click Scan.
                   </p>
                 </div>
@@ -919,12 +919,12 @@ export function Remap() {
                           <p className="font-bold truncate pr-1 text-zinc-200">
                             {pad.name}
                           </p>
-                          <p className="text-[8px] text-zinc-500 font-mono truncate">
+                          <p className="text-xs text-zinc-500 font-mono truncate">
                             {pad.id}
                           </p>
                         </div>
                       </div>
-                      <span className="text-[8px] font-bold bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20 uppercase">
+                      <span className="text-xs font-bold bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20 uppercase">
                         Active
                       </span>
                     </div>
@@ -982,7 +982,7 @@ export function Remap() {
                         <p className="text-xs font-bold text-zinc-200 truncate">
                           {proc.exe_name}
                         </p>
-                        <p className="text-[9px] font-mono text-zinc-500">
+                        <p className="text-xs font-mono text-zinc-500">
                           PID: {proc.pid}
                         </p>
                       </div>
@@ -993,7 +993,7 @@ export function Remap() {
                         onClick={() =>
                           onRemoveTarget(proc.exe_name.toLowerCase())
                         }
-                        className="py-1 px-3 h-8 rounded-lg text-[10px]"
+                        className="py-1 px-3 h-8 rounded-lg text-xs"
                       >
                         Remove
                       </Button>
@@ -1001,7 +1001,7 @@ export function Remap() {
                       <Button
                         variant="secondary"
                         onClick={() => onAddTarget(proc.exe_name.toLowerCase())}
-                        className="py-1 px-3 h-8 rounded-lg text-[10px]"
+                        className="py-1 px-3 h-8 rounded-lg text-xs"
                       >
                         Add App
                       </Button>

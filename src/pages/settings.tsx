@@ -5,14 +5,8 @@ import { ThemeType, useSettingsStore } from '@/hooks/use-settings-store';
 
 export function Settings() {
   const {
-    runOnBoot,
-    startMinimized,
-    minimizeToTray,
     developerMode,
     theme,
-    setRunOnBoot,
-    setStartMinimized,
-    setMinimizeToTray,
     setDeveloperMode,
     setTheme
   } = useSettingsStore();
@@ -27,47 +21,49 @@ export function Settings() {
         <Card title="Startup & Window Behavior">
           <div className="space-y-4">
             {/* Run on Boot */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between opacity-60">
               <div>
                 <label className="text-xs font-semibold text-zinc-200">
                   Start with Windows
                 </label>
-                <p className="text-[10px] text-zinc-500">
-                  Launch daemon in system tray when booting.
+                <p className="text-xs text-zinc-500">
+                  Launch daemon in system tray when booting. (Coming Soon)
                 </p>
               </div>
-              <ToggleSwitch checked={runOnBoot} onChange={setRunOnBoot} />
+              <ToggleSwitch checked={false} onChange={() => {}} disabled />
             </div>
 
             {/* Start Minimized */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between opacity-60">
               <div>
                 <label className="text-xs font-semibold text-zinc-200">
                   Start Minimized
                 </label>
-                <p className="text-[10px] text-zinc-500">
-                  Do not open the GUI window on system startup.
+                <p className="text-xs text-zinc-500">
+                  Do not open the GUI window on system startup. (Coming Soon)
                 </p>
               </div>
               <ToggleSwitch
-                checked={startMinimized}
-                onChange={setStartMinimized}
+                checked={false}
+                onChange={() => {}}
+                disabled
               />
             </div>
 
             {/* Minimize to Tray */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between opacity-60">
               <div>
                 <label className="text-xs font-semibold text-zinc-200">
                   Minimize to System Tray
                 </label>
-                <p className="text-[10px] text-zinc-500">
-                  Closing the window will hide it to the tray.
+                <p className="text-xs text-zinc-500">
+                  Closing the window will hide it to the tray. (Coming Soon)
                 </p>
               </div>
               <ToggleSwitch
-                checked={minimizeToTray}
-                onChange={setMinimizeToTray}
+                checked={false}
+                onChange={() => {}}
+                disabled
               />
             </div>
 
@@ -76,7 +72,7 @@ export function Settings() {
                 <label className="text-xs font-semibold text-zinc-200">
                   Developer Mode
                 </label>
-                <p className="text-[10px] text-zinc-500">
+                <p className="text-xs text-zinc-500">
                   Enable verbose diagnostic remap and injection logs.
                 </p>
               </div>
@@ -122,7 +118,7 @@ export function Settings() {
                 >
                   {item.title}
                 </span>
-                <span className="text-[10px] text-zinc-500 leading-normal">
+                <span className="text-xs text-zinc-500 leading-normal">
                   {item.desc}
                 </span>
               </button>

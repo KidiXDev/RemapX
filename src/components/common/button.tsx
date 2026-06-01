@@ -39,19 +39,23 @@ interface ToggleSwitchProps {
   checked: boolean;
   onChange: (checked: boolean) => void;
   className?: string;
+  disabled?: boolean;
 }
 
 export const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
   checked,
   onChange,
-  className
+  className,
+  disabled
 }) => {
   return (
     <button
-      onClick={() => onChange(!checked)}
+      onClick={() => !disabled && onChange(!checked)}
+      disabled={disabled}
       className={cn(
         'w-9 h-5 rounded-full p-0.5 transition-all flex items-center',
         checked ? 'bg-primary' : 'bg-zinc-800',
+        disabled && 'opacity-40 cursor-not-allowed',
         className
       )}
     >

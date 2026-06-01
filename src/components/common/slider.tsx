@@ -26,7 +26,7 @@ export const Slider: React.FC<SliderProps> = ({
     <div className={cn('flex flex-col gap-2', className)}>
       <div className="flex justify-between">
         <label className="text-xs font-semibold text-zinc-200">{label}</label>
-        <span className="text-[10px] font-bold text-primary-text">
+        <span className="text-xs font-bold text-primary-text">
           {value} {suffix}
         </span>
       </div>
@@ -39,7 +39,7 @@ export const Slider: React.FC<SliderProps> = ({
         className="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none accent-primary"
       />
       {description && (
-        <p className="text-[9px] text-zinc-400 leading-normal">{description}</p>
+        <p className="text-xs text-zinc-400 leading-normal">{description}</p>
       )}
     </div>
   );
