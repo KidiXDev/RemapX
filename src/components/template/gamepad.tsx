@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import { listen } from '@tauri-apps/api/event';
 import { Mapping } from '@/hooks/use-settings-store';
+import { listen } from '@tauri-apps/api/event';
+import { useEffect, useState } from 'react';
 
 interface GamepadStatePayload {
   button_id: number;
@@ -112,10 +112,7 @@ export function Gamepad({
   };
 
   return (
-    <div className="relative w-full max-w-[340px] aspect-[5/3] my-4 group select-none">
-      {/* Decorative Glow */}
-      <div className="absolute inset-0 bg-primary/5 rounded-[40px] blur-2xl opacity-50 group-hover:opacity-80 transition-opacity pointer-events-none" />
-
+    <div className="relative w-full max-w-[340px] aspect-5/3 my-4 group select-none">
       <svg
         className="w-full h-full text-zinc-700 transition-colors duration-300"
         viewBox="0 0 100 60"
@@ -123,7 +120,7 @@ export function Gamepad({
       >
         <defs>
           {/* Neon Glow Filter */}
-          <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+          <filter id="glow" x="-150%" y="-150%" width="400%" height="400%">
             <feGaussianBlur stdDeviation="1.2" result="blur" />
             <feComposite in="SourceGraphic" in2="blur" operator="over" />
           </filter>
@@ -143,10 +140,13 @@ export function Gamepad({
         </defs>
 
         {/* Floating Triggers & Bumpers (Vertical Stack on Top Left/Right) */}
-        
+
         {/* Left Side: LT (top capsule) and LB (bottom pill) */}
         {/* Left Trigger (LT) */}
-        <g className="cursor-pointer" onClick={() => handleControlClick(6, 'Left Trigger')}>
+        <g
+          className="cursor-pointer"
+          onClick={() => handleControlClick(6, 'Left Trigger')}
+        >
           <rect
             x="24"
             y="3.5"
@@ -163,7 +163,10 @@ export function Gamepad({
         </g>
 
         {/* Left Bumper (LB) */}
-        <g className="cursor-pointer" onClick={() => handleControlClick(4, 'Left Bumper')}>
+        <g
+          className="cursor-pointer"
+          onClick={() => handleControlClick(4, 'Left Bumper')}
+        >
           <rect
             x="22"
             y="9.8"
@@ -181,7 +184,10 @@ export function Gamepad({
 
         {/* Right Side: RT (top capsule) and RB (bottom pill) */}
         {/* Right Trigger (RT) */}
-        <g className="cursor-pointer" onClick={() => handleControlClick(7, 'Right Trigger')}>
+        <g
+          className="cursor-pointer"
+          onClick={() => handleControlClick(7, 'Right Trigger')}
+        >
           <rect
             x="72"
             y="3.5"
@@ -198,7 +204,10 @@ export function Gamepad({
         </g>
 
         {/* Right Bumper (RB) */}
-        <g className="cursor-pointer" onClick={() => handleControlClick(5, 'Right Bumper')}>
+        <g
+          className="cursor-pointer"
+          onClick={() => handleControlClick(5, 'Right Bumper')}
+        >
           <rect
             x="70"
             y="9.8"
@@ -239,7 +248,10 @@ export function Gamepad({
         />
 
         {/* Mode / Guide Button (Center) */}
-        <g className="cursor-pointer" onClick={() => handleControlClick(10, 'Mode Button')}>
+        <g
+          className="cursor-pointer"
+          onClick={() => handleControlClick(10, 'Mode Button')}
+        >
           <circle
             cx="50"
             cy="28"
@@ -263,7 +275,10 @@ export function Gamepad({
         </g>
 
         {/* Select / Back Button */}
-        <g className="cursor-pointer" onClick={() => handleControlClick(8, 'Select Button')}>
+        <g
+          className="cursor-pointer"
+          onClick={() => handleControlClick(8, 'Select Button')}
+        >
           <rect
             x="39.5"
             y="27.25"
@@ -273,7 +288,9 @@ export function Gamepad({
             transform="rotate(-15 41 28)"
             fill={pressedSelect ? 'var(--primary)' : '#27272a'}
             filter={pressedSelect ? 'url(#glow)' : undefined}
-            stroke={pressedSelect ? 'var(--primary-hover)' : 'var(--border-main)'}
+            stroke={
+              pressedSelect ? 'var(--primary-hover)' : 'var(--border-main)'
+            }
             strokeWidth="0.5"
             className="transition-all duration-150 hover:brightness-125"
           />
@@ -281,7 +298,10 @@ export function Gamepad({
         </g>
 
         {/* Start / Options Button */}
-        <g className="cursor-pointer" onClick={() => handleControlClick(9, 'Start Button')}>
+        <g
+          className="cursor-pointer"
+          onClick={() => handleControlClick(9, 'Start Button')}
+        >
           <rect
             x="57.5"
             y="27.25"
@@ -291,7 +311,9 @@ export function Gamepad({
             transform="rotate(15 59 28)"
             fill={pressedStart ? 'var(--primary)' : '#27272a'}
             filter={pressedStart ? 'url(#glow)' : undefined}
-            stroke={pressedStart ? 'var(--primary-hover)' : 'var(--border-main)'}
+            stroke={
+              pressedStart ? 'var(--primary-hover)' : 'var(--border-main)'
+            }
             strokeWidth="0.5"
             className="transition-all duration-150 hover:brightness-125"
           />
@@ -308,7 +330,10 @@ export function Gamepad({
 
         {/* Interactive D-Pad Directions */}
         {/* D-Pad Up */}
-        <g className="cursor-pointer" onClick={() => handleControlClick(13, 'D-Pad Up')}>
+        <g
+          className="cursor-pointer"
+          onClick={() => handleControlClick(13, 'D-Pad Up')}
+        >
           <path
             d="M 23.5 29.5 L 26.5 29.5 L 26.5 26.5 C 26.5 25.5, 23.5 25.5, 23.5 26.5 Z"
             fill={pressedDUp ? 'var(--primary)' : '#27272a'}
@@ -321,12 +346,17 @@ export function Gamepad({
         </g>
 
         {/* D-Pad Down */}
-        <g className="cursor-pointer" onClick={() => handleControlClick(14, 'D-Pad Down')}>
+        <g
+          className="cursor-pointer"
+          onClick={() => handleControlClick(14, 'D-Pad Down')}
+        >
           <path
             d="M 23.5 32.5 L 26.5 32.5 L 26.5 35.5 C 26.5 36.5, 23.5 36.5, 23.5 35.5 Z"
             fill={pressedDDown ? 'var(--primary)' : '#27272a'}
             filter={pressedDDown ? 'url(#glow)' : undefined}
-            stroke={pressedDDown ? 'var(--primary-hover)' : 'var(--border-main)'}
+            stroke={
+              pressedDDown ? 'var(--primary-hover)' : 'var(--border-main)'
+            }
             strokeWidth="0.5"
             className="transition-all duration-150 hover:brightness-125"
           />
@@ -334,12 +364,17 @@ export function Gamepad({
         </g>
 
         {/* D-Pad Left */}
-        <g className="cursor-pointer" onClick={() => handleControlClick(15, 'D-Pad Left')}>
+        <g
+          className="cursor-pointer"
+          onClick={() => handleControlClick(15, 'D-Pad Left')}
+        >
           <path
             d="M 23.5 29.5 L 23.5 32.5 L 20.5 32.5 C 19.5 32.5, 19.5 29.5, 20.5 29.5 Z"
             fill={pressedDLeft ? 'var(--primary)' : '#27272a'}
             filter={pressedDLeft ? 'url(#glow)' : undefined}
-            stroke={pressedDLeft ? 'var(--primary-hover)' : 'var(--border-main)'}
+            stroke={
+              pressedDLeft ? 'var(--primary-hover)' : 'var(--border-main)'
+            }
             strokeWidth="0.5"
             className="transition-all duration-150 hover:brightness-125"
           />
@@ -347,12 +382,17 @@ export function Gamepad({
         </g>
 
         {/* D-Pad Right */}
-        <g className="cursor-pointer" onClick={() => handleControlClick(16, 'D-Pad Right')}>
+        <g
+          className="cursor-pointer"
+          onClick={() => handleControlClick(16, 'D-Pad Right')}
+        >
           <path
             d="M 26.5 29.5 L 26.5 32.5 L 29.5 32.5 C 30.5 32.5, 30.5 29.5, 29.5 29.5 Z"
             fill={pressedDRight ? 'var(--primary)' : '#27272a'}
             filter={pressedDRight ? 'url(#glow)' : undefined}
-            stroke={pressedDRight ? 'var(--primary-hover)' : 'var(--border-main)'}
+            stroke={
+              pressedDRight ? 'var(--primary-hover)' : 'var(--border-main)'
+            }
             strokeWidth="0.5"
             className="transition-all duration-150 hover:brightness-125"
           />
@@ -360,7 +400,10 @@ export function Gamepad({
         </g>
 
         {/* Left Thumbstick (LS) */}
-        <g className="cursor-pointer" onClick={() => handleControlClick(11, 'Left Stick')}>
+        <g
+          className="cursor-pointer"
+          onClick={() => handleControlClick(11, 'Left Stick')}
+        >
           {/* Base / Ring */}
           <circle
             cx="36"
@@ -396,7 +439,10 @@ export function Gamepad({
         </g>
 
         {/* Right Thumbstick (RS) */}
-        <g className="cursor-pointer" onClick={() => handleControlClick(12, 'Right Stick')}>
+        <g
+          className="cursor-pointer"
+          onClick={() => handleControlClick(12, 'Right Stick')}
+        >
           {/* Base / Ring */}
           <circle
             cx="64"
@@ -433,7 +479,10 @@ export function Gamepad({
 
         {/* Face Buttons Cluster (Y, X, B, A) */}
         {/* Y Button (North) */}
-        <g className="cursor-pointer" onClick={() => handleControlClick(3, 'Y Button')}>
+        <g
+          className="cursor-pointer"
+          onClick={() => handleControlClick(3, 'Y Button')}
+        >
           <circle
             cx="75"
             cy="26"
@@ -459,7 +508,10 @@ export function Gamepad({
         </g>
 
         {/* X Button (West) */}
-        <g className="cursor-pointer" onClick={() => handleControlClick(2, 'X Button')}>
+        <g
+          className="cursor-pointer"
+          onClick={() => handleControlClick(2, 'X Button')}
+        >
           <circle
             cx="70"
             cy="31"
@@ -485,7 +537,10 @@ export function Gamepad({
         </g>
 
         {/* B Button (East) */}
-        <g className="cursor-pointer" onClick={() => handleControlClick(1, 'B Button')}>
+        <g
+          className="cursor-pointer"
+          onClick={() => handleControlClick(1, 'B Button')}
+        >
           <circle
             cx="80"
             cy="31"
@@ -511,7 +566,10 @@ export function Gamepad({
         </g>
 
         {/* A Button (South) */}
-        <g className="cursor-pointer" onClick={() => handleControlClick(0, 'A Button')}>
+        <g
+          className="cursor-pointer"
+          onClick={() => handleControlClick(0, 'A Button')}
+        >
           <circle
             cx="75"
             cy="36"
