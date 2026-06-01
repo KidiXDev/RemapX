@@ -82,7 +82,8 @@ export function Remap() {
     createProfile,
     renameProfile,
     deleteProfile,
-    duplicateProfile
+    duplicateProfile,
+    developerMode
   } = useSettingsStore();
 
   const confirm = useConfirm();
@@ -284,7 +285,7 @@ export function Remap() {
     listen<{ button_id: number; pressed: boolean }>(
       'gamepad-button-state',
       (event) => {
-        if (!event.payload.pressed) return;
+        if (!event.payload.pressed || !developerMode) return;
         const label =
           buttonLabelMap[event.payload.button_id] ||
           String(event.payload.button_id);
@@ -307,7 +308,7 @@ export function Remap() {
       if (unlistenActive) unlistenActive();
       if (unlistenButton) unlistenButton();
     };
-  }, [setActiveProfile]);
+  }, [setActiveProfile, developerMode]);
 
   const tabOptions = [
     {

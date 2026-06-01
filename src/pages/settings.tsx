@@ -9,11 +9,13 @@ export function Settings() {
     runOnBoot,
     startMinimized,
     minimizeToTray,
+    developerMode,
     debounce,
     theme,
     setRunOnBoot,
     setStartMinimized,
     setMinimizeToTray,
+    setDeveloperMode,
     setDebounce,
     setTheme
   } = useSettingsStore();
@@ -69,6 +71,21 @@ export function Settings() {
               <ToggleSwitch
                 checked={minimizeToTray}
                 onChange={setMinimizeToTray}
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="text-xs font-semibold text-zinc-200">
+                  Developer Mode
+                </label>
+                <p className="text-[10px] text-zinc-500">
+                  Enable verbose diagnostic remap and injection logs.
+                </p>
+              </div>
+              <ToggleSwitch
+                checked={developerMode}
+                onChange={setDeveloperMode}
               />
             </div>
           </div>

@@ -1,6 +1,10 @@
 #[cfg(target_os = "windows")]
+use windows_sys::Win32::Foundation::GetLastError;
+
+#[cfg(target_os = "windows")]
 use windows_sys::Win32::UI::Input::KeyboardAndMouse::{
-    SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_KEYUP,
+    MapVirtualKeyW, SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_EXTENDEDKEY,
+    KEYEVENTF_KEYUP, KEYEVENTF_SCANCODE, MAPVK_VK_TO_VSC_EX,
 };
 
 #[cfg(target_os = "windows")]
@@ -55,14 +59,47 @@ pub fn key_to_vk(key: &str) -> Option<u16> {
 }
 
 #[cfg(target_os = "windows")]
-fn send_keyboard_input(vk: u16, key_up: bool) {
-    let flags = if key_up { KEYEVENTF_KEYUP } else { 0 };
+fn is_extended_vk(vk: u16) -> bool {
+    matches!(
+        vk,
+        VK_LEFT
+            | VK_RIGHT
+            | VK_UP
+            | VK_DOWN
+            | VK_INSERT
+            | VK_DELETE
+            | VK_HOME
+            | VK_END
+            | VK_PRIOR
+            | VK_NEXT
+            | VK_RETURN
+            | VK_MENU
+            | VK_CONTROL
+    )
+}
+
+#[cfg(target_os = "windows")]
+fn send_keyboard_input(vk: u16, key_up: bool) -> Result<(), u32> {
+    let scan = unsafe { MapVirtualKeyW(vk as u32, MAPVK_VK_TO_VSC_EX) } as u16;
+    if scan == 0 {
+        return Err(0);
+    }
+
+    let mut flags = KEYEVENTF_SCANCODE;
+    if key_up {
+        flags |= KEYEVENTF_KEYUP;
+    }
+    if is_extended_vk(vk) {
+        flags |= KEYEVENTF_EXTENDEDKEY;
+    }
+
     let mut input = INPUT {
         r#type: INPUT_KEYBOARD,
         Anonymous: INPUT_0 {
             ki: KEYBDINPUT {
-                wVk: vk,
-                wScan: 0,
+                // Use hardware scan codes for wider compatibility across apps/games.
+                wVk: 0,
+                wScan: scan,
                 dwFlags: flags,
                 time: 0,
                 dwExtraInfo: 0,
@@ -70,23 +107,33 @@ fn send_keyboard_input(vk: u16, key_up: bool) {
         },
     };
 
-    unsafe {
+    let sent = unsafe {
         SendInput(
             1,
             &mut input as *mut INPUT,
             std::mem::size_of::<INPUT>() as i32,
-        );
+        )
+    };
+
+    if sent == 1 {
+        Ok(())
+    } else {
+        Err(unsafe { GetLastError() })
     }
 }
 
-pub fn tap_key(vk: u16) {
+pub fn tap_key(vk: u16) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
-        send_keyboard_input(vk, false);
-        send_keyboard_input(vk, true);
+        send_keyboard_input(vk, false)
+            .map_err(|code| format!("key down SendInput failed (vk={vk}, err={code})"))?;
+        send_keyboard_input(vk, true)
+            .map_err(|code| format!("key up SendInput failed (vk={vk}, err={code})"))?;
+        Ok(())
     }
     #[cfg(not(target_os = "windows"))]
     {
         let _ = vk;
+        Ok(())
     }
 }

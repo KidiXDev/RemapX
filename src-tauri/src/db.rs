@@ -103,6 +103,7 @@ fn seed_if_needed(conn: &Connection) -> Result<(), String> {
         ("runOnBoot", "false"),
         ("startMinimized", "false"),
         ("minimizeToTray", "true"),
+        ("developerMode", "false"),
         ("activeProfile", "Default"),
     ];
 

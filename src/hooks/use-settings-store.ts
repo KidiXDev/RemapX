@@ -26,6 +26,7 @@ interface SettingsState {
   runOnBoot: boolean;
   startMinimized: boolean;
   minimizeToTray: boolean;
+  developerMode: boolean;
   debounce: number;
   theme: ThemeType;
   activeProfile: string;
@@ -34,6 +35,7 @@ interface SettingsState {
   setRunOnBoot: (val: boolean) => Promise<void>;
   setStartMinimized: (val: boolean) => Promise<void>;
   setMinimizeToTray: (val: boolean) => Promise<void>;
+  setDeveloperMode: (val: boolean) => Promise<void>;
   setDebounce: (val: number) => Promise<void>;
   setTheme: (theme: ThemeType) => Promise<void>;
   setActiveProfile: (name: string) => Promise<void>;
@@ -62,6 +64,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   runOnBoot: false,
   startMinimized: false,
   minimizeToTray: true,
+  developerMode: false,
   debounce: 10,
   theme: 'dark',
   activeProfile: 'Default',
@@ -82,6 +85,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
       runOnBoot: parseBool(values.runOnBoot, false),
       startMinimized: parseBool(values.startMinimized, false),
       minimizeToTray: parseBool(values.minimizeToTray, true),
+      developerMode: parseBool(values.developerMode, false),
       debounce: parseNum(values.debounce, 10),
       theme,
       activeProfile: values.activeProfile || profiles[0]?.name || 'Default',
@@ -102,6 +106,11 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   setMinimizeToTray: async (val) => {
     set({ minimizeToTray: val });
     await invoke('save_setting', { key: 'minimizeToTray', value: String(val) });
+  },
+
+  setDeveloperMode: async (val) => {
+    set({ developerMode: val });
+    await invoke('save_setting', { key: 'developerMode', value: String(val) });
   },
 
   setDebounce: async (val) => {

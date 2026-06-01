@@ -3,14 +3,21 @@ mod input_sim;
 mod monitor;
 
 use db::{Profile, SettingsPayload};
-use gilrs::{Button, EventType, Gilrs};
+use gilrs::{Button, EventType, GamepadId, Gilrs};
 use serde::Serialize;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 use tauri::{AppHandle, Emitter, State};
+#[cfg(target_os = "windows")]
+use windows_sys::Win32::UI::Input::XboxController::{
+    XInputGetState, XINPUT_GAMEPAD_A, XINPUT_GAMEPAD_B, XINPUT_GAMEPAD_BACK, XINPUT_GAMEPAD_DPAD_DOWN,
+    XINPUT_GAMEPAD_DPAD_LEFT, XINPUT_GAMEPAD_DPAD_RIGHT, XINPUT_GAMEPAD_DPAD_UP, XINPUT_GAMEPAD_LEFT_SHOULDER,
+    XINPUT_GAMEPAD_LEFT_THUMB, XINPUT_GAMEPAD_RIGHT_SHOULDER, XINPUT_GAMEPAD_RIGHT_THUMB, XINPUT_GAMEPAD_START,
+    XINPUT_GAMEPAD_X, XINPUT_GAMEPAD_Y, XINPUT_STATE,
+};
 
 #[cfg(target_os = "windows")]
 use windows_sys::Win32::Foundation::{CloseHandle, HWND, INVALID_HANDLE_VALUE, LPARAM};
@@ -36,6 +43,26 @@ struct GamepadButtonState {
 #[derive(Clone, Serialize)]
 struct EngineLog {
     message: String,
+}
+
+fn is_developer_mode_enabled() -> bool {
+    db::get_settings()
+        .ok()
+        .and_then(|s| s.values.get("developerMode").cloned())
+        .map(|v| v.eq_ignore_ascii_case("true"))
+        .unwrap_or(false)
+}
+
+fn emit_engine_log(app: &AppHandle, message: impl Into<String>, verbose: bool) {
+    if verbose && !is_developer_mode_enabled() {
+        return;
+    }
+    let _ = app.emit(
+        "engine-log",
+        EngineLog {
+            message: message.into(),
+        },
+    );
 }
 
 #[derive(Clone, Serialize)]
@@ -73,12 +100,32 @@ fn start_engine(app: AppHandle, engine: State<'_, EngineState>) -> Result<(), St
             }
         };
 
-        let _ = app_handle.emit(
-            "engine-log",
-            EngineLog {
-                message: "Input monitoring initialized at 1000Hz".to_string(),
-            },
-        );
+        emit_engine_log(&app_handle, "Input monitoring initialized at 1000Hz", false);
+        // Some controllers report digital buttons via ButtonChanged instead of
+        // ButtonPressed/ButtonReleased. Track synthetic press state per button.
+        let mut changed_button_state: HashMap<Button, bool> = HashMap::new();
+        let poll_buttons = [
+            Button::South,
+            Button::East,
+            Button::West,
+            Button::North,
+            Button::LeftTrigger,
+            Button::RightTrigger,
+            Button::LeftTrigger2,
+            Button::RightTrigger2,
+            Button::Select,
+            Button::Start,
+            Button::Mode,
+            Button::LeftThumb,
+            Button::RightThumb,
+            Button::DPadUp,
+            Button::DPadDown,
+            Button::DPadLeft,
+            Button::DPadRight,
+        ];
+        let mut polled_button_state: HashMap<(GamepadId, Button), bool> = HashMap::new();
+        #[cfg(target_os = "windows")]
+        let mut xinput_prev: [[bool; 17]; 4] = [[false; 17]; 4];
 
         while running.load(Ordering::Relaxed) {
             while let Some(ev) = gilrs.next_event() {
@@ -92,7 +139,7 @@ fn start_engine(app: AppHandle, engine: State<'_, EngineState>) -> Result<(), St
                                 pressed: true,
                             },
                         );
-                        trigger_mapping_action(button_id);
+                        trigger_mapping_action(button_id, &app_handle);
                     }
                     EventType::ButtonReleased(btn, _) => {
                         let button_id = button_to_id(btn);
@@ -104,7 +151,119 @@ fn start_engine(app: AppHandle, engine: State<'_, EngineState>) -> Result<(), St
                             },
                         );
                     }
+                    EventType::ButtonChanged(btn, value, _) => {
+                        let was_pressed = *changed_button_state.get(&btn).unwrap_or(&false);
+                        let is_pressed = value >= 0.5;
+                        let is_released = value <= 0.3;
+
+                        if is_pressed && !was_pressed {
+                            changed_button_state.insert(btn, true);
+                            let button_id = button_to_id(btn);
+                            let _ = app_handle.emit(
+                                "gamepad-button-state",
+                                GamepadButtonState {
+                                    button_id,
+                                    pressed: true,
+                                },
+                            );
+                            trigger_mapping_action(button_id, &app_handle);
+                        } else if is_released && was_pressed {
+                            changed_button_state.insert(btn, false);
+                            let button_id = button_to_id(btn);
+                            let _ = app_handle.emit(
+                                "gamepad-button-state",
+                                GamepadButtonState {
+                                    button_id,
+                                    pressed: false,
+                                },
+                            );
+                        }
+                    }
                     _ => {}
+                }
+            }
+
+            // Fallback polling path: some controller/drivers may not emit
+            // button events reliably; poll pressed states and synthesize edges.
+            for (id, gamepad) in gilrs.gamepads() {
+                if !gamepad.is_connected() {
+                    continue;
+                }
+                for btn in poll_buttons {
+                    let pressed_now = gamepad.is_pressed(btn);
+                    let key = (id, btn);
+                    let pressed_prev = polled_button_state.get(&key).copied().unwrap_or(false);
+                    if pressed_now != pressed_prev {
+                        polled_button_state.insert(key, pressed_now);
+                        let button_id = button_to_id(btn);
+                        let _ = app_handle.emit(
+                            "gamepad-button-state",
+                            GamepadButtonState {
+                                button_id,
+                                pressed: pressed_now,
+                            },
+                        );
+
+                        if pressed_now {
+                            emit_engine_log(
+                                &app_handle,
+                                format!("Polled press detected: pad={:?}, button={}", id, button_id),
+                                true,
+                            );
+                            trigger_mapping_action(button_id, &app_handle);
+                        }
+                    }
+                }
+            }
+
+            #[cfg(target_os = "windows")]
+            {
+                for (user_idx, prev_states) in xinput_prev.iter_mut().enumerate() {
+                    let mut state = XINPUT_STATE::default();
+                    let ok = unsafe { XInputGetState(user_idx as u32, &mut state) } == 0;
+                    if !ok {
+                        continue;
+                    }
+
+                    let buttons = state.Gamepad.wButtons;
+                    let left_trigger = state.Gamepad.bLeftTrigger >= 30;
+                    let right_trigger = state.Gamepad.bRightTrigger >= 30;
+                    let now = [
+                        (buttons & XINPUT_GAMEPAD_A) != 0,
+                        (buttons & XINPUT_GAMEPAD_B) != 0,
+                        (buttons & XINPUT_GAMEPAD_X) != 0,
+                        (buttons & XINPUT_GAMEPAD_Y) != 0,
+                        (buttons & XINPUT_GAMEPAD_LEFT_SHOULDER) != 0,
+                        (buttons & XINPUT_GAMEPAD_RIGHT_SHOULDER) != 0,
+                        left_trigger,
+                        right_trigger,
+                        (buttons & XINPUT_GAMEPAD_BACK) != 0,
+                        (buttons & XINPUT_GAMEPAD_START) != 0,
+                        false,
+                        (buttons & XINPUT_GAMEPAD_LEFT_THUMB) != 0,
+                        (buttons & XINPUT_GAMEPAD_RIGHT_THUMB) != 0,
+                        (buttons & XINPUT_GAMEPAD_DPAD_UP) != 0,
+                        (buttons & XINPUT_GAMEPAD_DPAD_DOWN) != 0,
+                        (buttons & XINPUT_GAMEPAD_DPAD_LEFT) != 0,
+                        (buttons & XINPUT_GAMEPAD_DPAD_RIGHT) != 0,
+                    ];
+
+                    for button_id in 0..=16 {
+                        if now[button_id] == prev_states[button_id] {
+                            continue;
+                        }
+                        prev_states[button_id] = now[button_id];
+                        let _ = app_handle.emit(
+                            "gamepad-button-state",
+                            GamepadButtonState {
+                                button_id: button_id as i64,
+                                pressed: now[button_id],
+                            },
+                        );
+                        if now[button_id] {
+                            trigger_mapping_action(button_id as i64, &app_handle);
+                        }
+                    }
                 }
             }
 
@@ -119,6 +278,17 @@ fn start_engine(app: AppHandle, engine: State<'_, EngineState>) -> Result<(), St
 #[tauri::command]
 fn stop_engine(engine: State<'_, EngineState>) -> Result<(), String> {
     engine.running.store(false, Ordering::SeqCst);
+    Ok(())
+}
+
+#[tauri::command]
+fn trigger_button_action(app: AppHandle, button_id: i64) -> Result<(), String> {
+    emit_engine_log(
+        &app,
+        format!("Frontend fallback trigger: button={button_id}"),
+        true,
+    );
+    trigger_mapping_action(button_id, &app);
     Ok(())
 }
 
@@ -145,18 +315,31 @@ fn button_to_id(button: Button) -> i64 {
     }
 }
 
-fn trigger_mapping_action(button_id: i64) {
+fn trigger_mapping_action(button_id: i64, app: &AppHandle) {
     let active_profile = db::get_settings()
         .ok()
         .and_then(|s| s.values.get("activeProfile").cloned())
         .unwrap_or_else(|| "Default".to_string());
+    emit_engine_log(
+        app,
+        format!("Remap lookup: button={button_id}, active_profile={active_profile}"),
+        true,
+    );
 
     let profiles = match db::get_profiles() {
         Ok(p) => p,
-        Err(_) => return,
+        Err(err) => {
+            emit_engine_log(
+                app,
+                format!("Remap lookup failed: cannot load profiles: {err}"),
+                false,
+            );
+            return;
+        }
     };
 
     let Some(profile) = profiles.into_iter().find(|p| p.name == active_profile) else {
+        emit_engine_log(app, "Remap skipped: active profile not found", false);
         return;
     };
 
@@ -165,11 +348,52 @@ fn trigger_mapping_action(button_id: i64) {
         .into_iter()
         .find(|m| m.button_id == button_id)
     else {
+        emit_engine_log(
+            app,
+            format!("Remap skipped: no mapping for button={button_id}"),
+            true,
+        );
         return;
     };
 
+    emit_engine_log(
+        app,
+        format!(
+            "Remap matched: button={} -> key='{}' type={}",
+            button_id, mapping.key_str, mapping.mapping_type
+        ),
+        true,
+    );
+
+    if !mapping.mapping_type.eq_ignore_ascii_case("keyboard") {
+        emit_engine_log(
+            app,
+            format!(
+                "Remap skipped: mapping_type '{}' not implemented",
+                mapping.mapping_type
+            ),
+            false,
+        );
+        return;
+    }
+
     if let Some(vk) = input_sim::key_to_vk(&mapping.key_str) {
-        input_sim::tap_key(vk);
+        emit_engine_log(
+            app,
+            format!("Injecting key: '{}' (vk={vk})", mapping.key_str),
+            true,
+        );
+        if let Err(err) = input_sim::tap_key(vk) {
+            emit_engine_log(app, format!("Injection failed: {err}"), false);
+        } else if is_developer_mode_enabled() {
+            emit_engine_log(app, "Injection success", true);
+        }
+    } else {
+        emit_engine_log(
+            app,
+            format!("Remap skipped: unsupported key '{}'", mapping.key_str),
+            false,
+        );
     }
 }
 
@@ -336,6 +560,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             start_engine,
             stop_engine,
+            trigger_button_action,
             get_profiles,
             save_profile,
             create_profile,
