@@ -1,7 +1,8 @@
 import { Suspense, useEffect } from 'react';
 import { Link, Outlet, useLocation } from 'react-router';
-import { useSettingsStore } from '../../hooks/use-settings-store';
+import { useSettingsStore } from '@/hooks/use-settings-store';
 import { Gamepad2, Settings as SettingsIcon, ArrowLeft } from 'lucide-react';
+import { Button } from '@/components/common/button';
 
 export function RootLayout() {
   const location = useLocation();
@@ -43,20 +44,16 @@ export function RootLayout() {
           </div>
 
           {isSettingsPage ? (
-            <Link
-              to="/"
-              className="p-2.5 rounded-xl bg-primary hover:bg-primary-hover text-zinc-950 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer shadow-lg shadow-primary/10 flex items-center justify-center"
-              title="Back to Canvas"
-            >
-              <ArrowLeft className="w-4 h-4" />
+            <Link to="/" title="Back to Canvas">
+              <Button variant="primary" className="p-2.5">
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
             </Link>
           ) : (
-            <Link
-              to="/settings"
-              className="p-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-750 text-zinc-200 transition-all border border-border-main hover:border-zinc-600 hover:scale-[1.02] active:scale-[0.98] cursor-pointer flex items-center justify-center"
-              title="Settings"
-            >
-              <SettingsIcon className="w-4 h-4" />
+            <Link to="/settings" title="Settings">
+              <Button variant="icon">
+                <SettingsIcon className="w-4 h-4" />
+              </Button>
             </Link>
           )}
         </div>

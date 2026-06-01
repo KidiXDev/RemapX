@@ -1,5 +1,9 @@
+import { Button } from '@/components/common/button';
+import { Card } from '@/components/common/card';
+import { Tabs } from '@/components/common/tabs';
+import { Gamepad } from '@/components/template/gamepad';
+import { ChevronsRight, Play, RotateCcw, Save, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { Save, RotateCcw, ChevronsRight, Trash2, Play } from 'lucide-react';
 
 interface Mapping {
   id: string;
@@ -8,6 +12,8 @@ interface Mapping {
   type: 'Keyboard' | 'Mouse' | 'Macro' | 'System';
   status: 'Active' | 'Blocked';
 }
+
+type TabType = 'bindings' | 'live';
 
 export function Remap() {
   const [mappings, setMappings] = useState<Mapping[]>([
@@ -69,7 +75,7 @@ export function Remap() {
     }
   ]);
 
-  const [activeTab, setActiveTab] = useState<'bindings' | 'live'>('bindings');
+  const [activeTab, setActiveTab] = useState<TabType>('bindings');
   const [logs, setLogs] = useState<string[]>([
     '[02:15:30] Daemon connected to DualSense Edge...',
     '[02:15:31] Profile "FPS Competive Apex" loaded.',
@@ -80,6 +86,14 @@ export function Remap() {
     const time = new Date().toLocaleTimeString();
     setLogs((prev) => [`[${time}] Pressed: ${button}`, ...prev.slice(0, 9)]);
   };
+
+  const tabOptions = [
+    {
+      id: 'bindings' as TabType,
+      label: `Active Key Bindings (${mappings.length})`
+    },
+    { id: 'live' as TabType, label: 'Diagnostics & Input Monitor' }
+  ];
 
   return (
     <div className="space-y-6 animate-fade-in max-w-6xl mx-auto">
@@ -95,134 +109,40 @@ export function Remap() {
           </p>
         </div>
         <div className="flex gap-2.5">
-          <button className="flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary-hover text-zinc-950 text-xs font-bold rounded-xl transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-primary/10">
+          <Button variant="primary">
             <Save className="w-3.5 h-3.5" />
             <span>Save Config</span>
-          </button>
-          <button className="flex items-center gap-1.5 px-4 py-2 bg-zinc-900 border border-border-main hover:border-border-hover text-zinc-300 text-xs font-bold rounded-xl transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98]">
+          </Button>
+          <Button variant="secondary">
             <RotateCcw className="w-3.5 h-3.5 text-zinc-400" />
             <span>Revert Changes</span>
-          </button>
+          </Button>
         </div>
       </section>
 
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Hand Controller Graphic */}
-        <div className="lg:col-span-5 rounded-2xl bg-bg-card border border-border-main p-6 flex flex-col items-center justify-between min-h-[450px]">
+        <Card className="lg:col-span-5 items-center justify-between min-h-[450px] flex flex-col space-y-0">
           <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-widest self-start">
             Interactive Mapping Blueprint
           </span>
-
-          {/* Simple Visual Controller Drawing using SVG */}
-          <div className="relative w-80 h-48 my-8 group">
-            {/* Pulsing highlights for buttons using theme variables */}
-            <div className="absolute top-1/4 left-1/4 w-4 h-4 bg-primary/20 rounded-full animate-ping pointer-events-none" />
-            <div className="absolute top-1/4 right-1/4 w-4 h-4 bg-primary/15 rounded-full animate-ping pointer-events-none" />
-
-            <svg
-              className="w-full h-full text-zinc-700 transition-colors group-hover:text-zinc-600"
-              style={{ filter: 'drop-shadow(0px 0px 12px var(--primary-glow))' }}
-              viewBox="0 0 100 60"
-              fill="currentColor"
-            >
-              {/* Outer Shell */}
-              <path d="M 20 15 C 35 15, 38 22, 50 22 C 62 22, 65 15, 80 15 C 95 15, 96 35, 88 55 C 84 62, 70 55, 62 48 C 55 45, 45 45, 38 48 C 30 55, 16 62, 12 55 C 4 35, 5 15, 20 15 Z" />
-              {/* Left Grip Inner */}
-              <path
-                d="M 15 20 C 22 20, 24 35, 16 48"
-                stroke="currentColor"
-                strokeWidth="0.5"
-                fill="none"
-                opacity="0.3"
-              />
-              {/* Right Grip Inner */}
-              <path
-                d="M 85 20 C 78 20, 76 35, 84 48"
-                stroke="currentColor"
-                strokeWidth="0.5"
-                fill="none"
-                opacity="0.3"
-              />
-              {/* D-Pad */}
-              <path d="M 22 28 h 6 v 6 h -6 z" fill="var(--bg-main)" />
-              <path d="M 24 26 h 2 v 10 h -2 z" fill="var(--bg-main)" />
-              {/* Left Stick */}
-              <circle
-                cx="34"
-                cy="38"
-                r="6"
-                fill="var(--bg-main)"
-                stroke="var(--primary)"
-                strokeWidth="0.75"
-              />
-              <circle cx="34" cy="38" r="3" fill="var(--border-main)" />
-              {/* Right Stick */}
-              <circle
-                cx="66"
-                cy="38"
-                r="6"
-                fill="var(--bg-main)"
-                stroke="var(--primary)"
-                strokeWidth="0.75"
-              />
-              <circle cx="66" cy="38" r="3" fill="var(--border-main)" />
-              {/* Action Buttons */}
-              <circle cx="78" cy="28" r="2" fill="#e4e4e7" /> {/* Y */}
-              <circle cx="74" cy="32" r="2" fill="#e4e4e7" /> {/* X */}
-              <circle cx="82" cy="32" r="2" fill="#e4e4e7" /> {/* B */}
-              <circle cx="78" cy="36" r="2" fill="var(--primary)" /> {/* A */}
-            </svg>
-
-            {/* Simulated Interactive buttons on overlay */}
-            <button
-              onClick={() => addSimulatedPress('L-Stick')}
-              className="absolute top-[55%] left-[30%] w-7 h-7 rounded-full bg-primary-bg/50 hover:bg-primary/20 border border-primary-border/60 cursor-pointer transition-all"
-              title="Click to simulate Left Stick input"
-            />
-            <button
-              onClick={() => addSimulatedPress('R-Stick')}
-              className="absolute top-[55%] right-[30%] w-7 h-7 rounded-full bg-primary-bg/50 hover:bg-primary/20 border border-primary-border/60 cursor-pointer transition-all"
-              title="Click to simulate Right Stick input"
-            />
-            <button
-              onClick={() => addSimulatedPress('A Button')}
-              className="absolute top-[52%] right-[19%] w-5 h-5 rounded-full bg-primary-bg/50 hover:bg-primary/20 border border-primary-border/60 cursor-pointer transition-all"
-              title="Click to simulate A button input"
-            />
-          </div>
+          <Gamepad onButtonPress={addSimulatedPress} />
 
           <div className="text-center text-xs text-zinc-500 px-4 leading-relaxed">
             Click on the highlighted stick circles or buttons on the blueprint
             to test driver injection and write diagnostic logs.
           </div>
-        </div>
+        </Card>
 
         {/* Right Hand Configuration / Mapping List */}
-        <div className="lg:col-span-7 rounded-2xl bg-bg-card border border-border-main overflow-hidden flex flex-col h-[450px]">
+        <Card className="lg:col-span-7 overflow-hidden p-0 h-[450px] flex flex-col space-y-0">
           {/* Tab Selector */}
-          <div className="flex border-b border-border-main bg-bg-header shrink-0">
-            <button
-              onClick={() => setActiveTab('bindings')}
-              className={`flex-1 py-3.5 text-xs font-bold border-b-2 transition-all cursor-pointer ${
-                activeTab === 'bindings'
-                  ? 'border-primary-text text-primary-text bg-primary-bg/5'
-                  : 'border-transparent text-zinc-400 hover:text-zinc-200'
-              }`}
-            >
-              Active Key Bindings ({mappings.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('live')}
-              className={`flex-1 py-3.5 text-xs font-bold border-b-2 transition-all cursor-pointer ${
-                activeTab === 'live'
-                  ? 'border-primary-text text-primary-text bg-primary-bg/5'
-                  : 'border-transparent text-zinc-400 hover:text-zinc-200'
-              }`}
-            >
-              Diagnostics & Input Monitor
-            </button>
-          </div>
+          <Tabs
+            options={tabOptions}
+            activeId={activeTab}
+            onChange={setActiveTab}
+          />
 
           {/* Tab Content */}
           <div className="flex-1 overflow-y-auto p-5">
@@ -273,25 +193,27 @@ export function Remap() {
                   ))}
                 </div>
                 <div className="flex gap-2.5 mt-4 shrink-0">
-                  <button
+                  <Button
+                    variant="secondary"
                     onClick={() => setLogs([])}
-                    className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-xs font-bold text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer border border-border-main"
+                    className="px-3.5 py-1.5 rounded-lg"
                   >
                     <Trash2 className="w-3.5 h-3.5 text-zinc-500" />
                     <span>Clear Diagnostics</span>
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="secondary"
                     onClick={() => addSimulatedPress('D-Pad Right')}
-                    className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-primary-bg hover:bg-primary/20 text-xs font-bold text-primary-text transition-colors cursor-pointer border border-primary-border/40"
+                    className="px-3.5 py-1.5 rounded-lg bg-primary-bg hover:bg-primary/25 border-primary-border/40 text-primary-text hover:text-primary-text"
                   >
                     <Play className="w-3.5 h-3.5" />
                     <span>Test Input Injection</span>
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   );

@@ -1,12 +1,10 @@
+import RootLayout from '@/components/layout/root-layout';
 import { lazy } from 'react';
 import { createHashRouter, RouterProvider } from 'react-router';
-import RootLayout from './components/layout/root-layout';
 
-// Lazy load the pages for modular, scalable code splitting
-const Remap = lazy(() => import('./pages/remap'));
-const Settings = lazy(() => import('./pages/settings'));
+const Remap = lazy(() => import('@/pages/remap'));
+const Settings = lazy(() => import('@/pages/settings'));
 
-// Define the route hierarchy using React Router v7's data routers
 const router = createHashRouter([
   {
     path: '/',
