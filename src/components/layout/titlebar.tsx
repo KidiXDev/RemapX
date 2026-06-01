@@ -1,12 +1,6 @@
 import { Button } from '@/components/common/button';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import {
-  ArrowLeft,
-  Gamepad2,
-  Minus,
-  Settings as SettingsIcon,
-  X
-} from 'lucide-react';
+import { ArrowLeft, Minus, Settings as SettingsIcon, X } from 'lucide-react';
 import { type MouseEvent } from 'react';
 import { Link } from 'react-router';
 
@@ -46,8 +40,13 @@ export function Titlebar({ isSettingsPage }: TitlebarProps) {
       className="h-10 border-b border-border-main bg-bg-header/85 backdrop-blur-md flex items-center justify-between pl-3 pr-0 z-30 shrink-0 select-none"
     >
       <div className="flex items-center gap-2">
-        <div className="w-5 h-5 rounded-md bg-linear-to-tr from-primary to-primary-hover flex items-center justify-center">
-          <Gamepad2 className="w-3 h-3 text-zinc-950" />
+        <div className="w-5 h-5 rounded-md overflow-hidden border border-border-main/70 bg-zinc-900/60">
+          <img
+            src="/app-icon.png"
+            alt="RemapX"
+            className="w-full h-full object-cover"
+            draggable={false}
+          />
         </div>
         <span className="text-xs font-semibold tracking-[0.18em] uppercase text-zinc-200">
           RemapX
