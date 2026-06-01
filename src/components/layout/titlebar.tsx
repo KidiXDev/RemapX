@@ -2,6 +2,7 @@ import { Button } from '@/components/common/button';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { ArrowLeft, Minus, Settings as SettingsIcon, X } from 'lucide-react';
 import { type MouseEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 
 interface TitlebarProps {
@@ -9,6 +10,7 @@ interface TitlebarProps {
 }
 
 export function Titlebar({ isSettingsPage }: TitlebarProps) {
+  const { t } = useTranslation('common');
   const canUseTauriWindow =
     typeof window !== 'undefined' &&
     '__TAURI_INTERNALS__' in (window as object);
@@ -43,13 +45,13 @@ export function Titlebar({ isSettingsPage }: TitlebarProps) {
         <div className="w-5 h-5 rounded-md overflow-hidden border border-border-main/70 bg-zinc-900/60">
           <img
             src="/app-icon.png"
-            alt="RemapX"
+            alt={t('appName')}
             className="w-full h-full object-cover"
             draggable={false}
           />
         </div>
         <span className="text-xs font-semibold tracking-[0.18em] uppercase text-zinc-200">
-          RemapX
+          {t('appName')}
         </span>
       </div>
 
@@ -57,13 +59,21 @@ export function Titlebar({ isSettingsPage }: TitlebarProps) {
         <div className="flex items-center pr-2">
           {!isSettingsPage ? (
             <Link to="/settings" data-no-drag>
-              <Button variant="ghost" className="h-7 w-7 p-0 rounded-lg">
+              <Button
+                variant="ghost"
+                className="h-7 w-7 p-0 rounded-lg"
+                title={t('titlebar.openSettings')}
+              >
                 <SettingsIcon className="size-4" strokeWidth={1.5} />
               </Button>
             </Link>
           ) : (
             <Link to="/" data-no-drag>
-              <Button variant="ghost" className="h-7 w-7 p-0 rounded-lg">
+              <Button
+                variant="ghost"
+                className="h-7 w-7 p-0 rounded-lg"
+                title={t('titlebar.backToRemap')}
+              >
                 <ArrowLeft className="size-4" strokeWidth={1.5} />
               </Button>
             </Link>
@@ -76,12 +86,14 @@ export function Titlebar({ isSettingsPage }: TitlebarProps) {
           <button
             className="w-12 h-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-800 active:bg-zinc-800/80 transition-colors duration-100"
             onClick={onMinimize}
+            title={t('titlebar.minimizeWindow')}
           >
             <Minus className="size-4" strokeWidth={1.5} />
           </button>
           <button
             className="w-12 h-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-red-700 active:bg-red-700/80 transition-colors duration-100"
             onClick={onClose}
+            title={t('titlebar.closeWindow')}
           >
             <X className="size-4" strokeWidth={1.5} />
           </button>

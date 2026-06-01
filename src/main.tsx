@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './global.css';
+import '@/i18n';
 import App from '@/routes';
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(

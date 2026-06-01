@@ -1,0 +1,85 @@
+{
+  "title": "Remap Canvas",
+  "engine": {
+    "start": "Start Engine Remap",
+    "stop": "Stop Engine Remap"
+  },
+  "record": {
+    "title": "Menunggu Input...",
+    "descriptionPrefix": "Tekan tombol apa saja di keyboard untuk bind ke",
+    "cancel": "Batal"
+  },
+  "tabs": {
+    "bindings": "Key Bindings",
+    "diagnostics": "Diagnostics"
+  },
+  "searchBindingsPlaceholder": "Cari key binding...",
+  "bindings": {
+    "emptyTitle": "Belum ada key binding",
+    "emptyDesc": "Klik tombol yang di-highlight pada gamepad canvas di atas untuk bind ke keyboard.",
+    "noMatchPrefix": "Tidak ada binding yang cocok untuk",
+    "headerGamepadControl": "Gamepad Control",
+    "headerMappedKey": "Mapped Key",
+    "headerType": "Type",
+    "headerAction": "Action",
+    "deleteMapping": "Hapus Mapping"
+  },
+  "diagnostics": {
+    "streamTitle": "DAEMON_LOG_STREAM",
+    "clearLogs": "Clear Logs",
+    "empty": "Belum ada log diagnostics. Tekan tombol gamepad untuk test."
+  },
+  "profile": {
+    "title": "Konfigurasi Profil",
+    "selectLabel": "Pilih Profil",
+    "renameTitle": "Rename Profil",
+    "renamePlaceholder": "Nama profil baru",
+    "save": "Simpan",
+    "cancel": "Batal",
+    "createTrigger": "Buat Profil Baru",
+    "createTitle": "Create Profile",
+    "createPlaceholder": "Nama profil...",
+    "create": "Buat",
+    "debounceLabel": "Debounce",
+    "debounceDesc": "Filter chatter switch hardware saat tombol ditekan untuk mencegah double click.",
+    "deadzoneLabel": "Joystick Deadzone",
+    "deadzoneDesc": "Batas inner deadzone stick untuk mencegah stick drift.",
+    "duplicate": "Duplicate",
+    "renamePromptTitle": "Hapus Profil",
+    "renamePromptDescPrefix": "Yakin ingin menghapus profil",
+    "renamePromptDescSuffix": "? Semua key binding di profil ini akan dihapus secara permanen.",
+    "deleteConfirm": "Hapus"
+  },
+  "targets": {
+    "title": "Target App",
+    "browseApp": "Browse App",
+    "globalTitle": "Global Mode Aktif",
+    "globalDesc": "Profil ini berlaku secara global. Tambah EXE yang lagi jalan untuk mengaktifkan auto-switch profile.",
+    "listDesc": "Profile ini bakal aktif otomatis saat salah satu executable ini lagi fokus:",
+    "remove": "Hapus",
+    "addApp": "Tambah App"
+  },
+  "hardware": {
+    "title": "Hardware Status",
+    "scan": "Scan",
+    "scanning": "Scanning port USB...",
+    "emptyTitle": "Tidak ada controller terdeteksi",
+    "emptyDesc": "Hubungkan controller via USB atau Bluetooth, lalu klik Scan.",
+    "active": "Aktif"
+  },
+  "process": {
+    "title": "Process Explorer",
+    "description": "Pilih executable game atau aplikasi di foreground.",
+    "searchPlaceholder": "Cari nama executable...",
+    "loading": "Loading window aktif...",
+    "empty": "Tidak ada proses dengan window aktif yang cocok.",
+    "pidPrefix": "PID:"
+  },
+  "logs": {
+    "remappedPrefix": "Remap",
+    "to": "->",
+    "buttonPressedPrefix": "Tombol",
+    "buttonPressedSuffix": "ditekan",
+    "autoSwitchedPrefix": "Profile otomatis di-switch ke"
+  }
+}

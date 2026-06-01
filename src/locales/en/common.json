@@ -1,0 +1,12 @@
+{
+  "appName": "RemapX",
+  "titlebar": {
+    "openSettings": "Open settings",
+    "backToRemap": "Back to remap",
+    "minimizeWindow": "Minimize window",
+    "closeWindow": "Close window"
+  },
+  "loading": {
+    "syncingControllerState": "Syncing Controller State..."
+  }
+}

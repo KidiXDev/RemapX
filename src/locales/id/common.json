@@ -1,0 +1,12 @@
+{
+  "appName": "RemapX",
+  "titlebar": {
+    "openSettings": "Buka Settings",
+    "backToRemap": "Kembali ke Remap",
+    "minimizeWindow": "Minimize window",
+    "closeWindow": "Tutup window"
+  },
+  "loading": {
+    "syncingControllerState": "Sinkronisasi status controller..."
+  }
+}

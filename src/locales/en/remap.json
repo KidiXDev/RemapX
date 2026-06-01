@@ -1,0 +1,85 @@
+{
+  "title": "Remap Canvas",
+  "engine": {
+    "start": "Start Input Remapping Engine",
+    "stop": "Stop Input Remapping Engine"
+  },
+  "record": {
+    "title": "Waiting for Input",
+    "descriptionPrefix": "Press any key on your keyboard to assign to",
+    "cancel": "Cancel"
+  },
+  "tabs": {
+    "bindings": "Key Bindings",
+    "diagnostics": "Diagnostics"
+  },
+  "searchBindingsPlaceholder": "Filter key bindings by input or key...",
+  "bindings": {
+    "emptyTitle": "No keybindings configured",
+    "emptyDesc": "Click any highlighted button on the gamepad canvas above to bind it to a key.",
+    "noMatchPrefix": "No matching bindings found for",
+    "headerGamepadControl": "Gamepad Control",
+    "headerMappedKey": "Mapped Key",
+    "headerType": "Type",
+    "headerAction": "Action",
+    "deleteMapping": "Delete Mapping"
+  },
+  "diagnostics": {
+    "streamTitle": "DAEMON_LOG_STREAM",
+    "clearLogs": "Clear Logs",
+    "empty": "No diagnostic logs captured yet. Press buttons to test."
+  },
+  "profile": {
+    "title": "Profile Configuration",
+    "selectLabel": "Select Profile",
+    "renameTitle": "Rename Profile",
+    "renamePlaceholder": "New profile name",
+    "save": "Save",
+    "cancel": "Cancel",
+    "createTrigger": "Create New Profile",
+    "createTitle": "Create Profile",
+    "createPlaceholder": "Profile name...",
+    "create": "Create",
+    "debounceLabel": "Debounce",
+    "debounceDesc": "Filters hardware switch chatter on button activations to prevent double clicks.",
+    "deadzoneLabel": "Joystick Deadzone",
+    "deadzoneDesc": "Inner circular deadzone threshold for sticks to prevent stick drift.",
+    "duplicate": "Duplicate",
+    "renamePromptTitle": "Delete Profile",
+    "renamePromptDescPrefix": "Are you sure you want to delete the profile",
+    "renamePromptDescSuffix": "? This will permanently remove all configured key bindings.",
+    "deleteConfirm": "Delete"
+  },
+  "targets": {
+    "title": "Target Applications",
+    "browseApp": "Browse App",
+    "globalTitle": "Global Mode Active",
+    "globalDesc": "This profile applies globally. Bind a running EXE to enable auto-profile switching.",
+    "listDesc": "This profile activates automatically when any of these executables are focused:",
+    "remove": "Remove",
+    "addApp": "Add App"
+  },
+  "hardware": {
+    "title": "Hardware Status",
+    "scan": "Scan",
+    "scanning": "Scanning USB ports...",
+    "emptyTitle": "No controller detected",
+    "emptyDesc": "Connect a controller via USB or Bluetooth and click Scan.",
+    "active": "Active"
+  },
+  "process": {
+    "title": "Process Explorer",
+    "description": "Select foreground game or application executables.",
+    "searchPlaceholder": "Search executable name...",
+    "loading": "Retrieving active windows...",
+    "empty": "No matching processes with visible windows found.",
+    "pidPrefix": "PID:"
+  },
+  "logs": {
+    "remappedPrefix": "Remapped",
+    "to": "->",
+    "buttonPressedPrefix": "Button",
+    "buttonPressedSuffix": "pressed",
+    "autoSwitchedPrefix": "Auto-switched profile to"
+  }
+}

@@ -81,6 +81,7 @@ fn seed_if_needed(conn: &Connection) -> Result<(), String> {
 
     let settings = [
         ("theme", "dark"),
+        ("locale", "en"),
         ("runOnBoot", "false"),
         ("startMinimized", "false"),
         ("minimizeToTray", "true"),

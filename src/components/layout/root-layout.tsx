@@ -1,11 +1,13 @@
 import { ConfirmationProvider } from '@/components/common/confirmation-provider';
 import { Titlebar } from '@/components/layout/titlebar';
 import { useSettingsStore } from '@/hooks/use-settings-store';
+import { useTranslation } from 'react-i18next';
 import { Suspense, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router';
 
 export function RootLayout() {
   const location = useLocation();
+  const { t } = useTranslation('common');
   const theme = useSettingsStore((state) => state.theme);
   const ready = useSettingsStore((state) => state.ready);
   const hydrate = useSettingsStore((state) => state.hydrate);
@@ -33,7 +35,7 @@ export function RootLayout() {
               <div className="flex flex-col items-center gap-3">
                 <div className="w-8 h-8 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
                 <span className="text-xs text-zinc-400 tracking-wider">
-                  Syncing Controller State...
+                  {t('loading.syncingControllerState')}
                 </span>
               </div>
             </div>
@@ -44,7 +46,7 @@ export function RootLayout() {
                   <div className="flex flex-col items-center gap-3">
                     <div className="w-8 h-8 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
                     <span className="text-xs text-zinc-400 tracking-wider">
-                      Syncing Controller State...
+                      {t('loading.syncingControllerState')}
                     </span>
                   </div>
                 </div>

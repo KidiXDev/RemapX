@@ -1,0 +1,41 @@
+{
+  "title": "System Settings",
+  "description": "Configure startup behavior, language, and visual preferences.",
+  "startupCardTitle": "Startup & Window Behavior",
+  "startWithWindows": {
+    "label": "Start with Windows",
+    "description": "Launch daemon in system tray when booting. (Coming Soon)"
+  },
+  "startMinimized": {
+    "label": "Start Minimized",
+    "description": "Do not open the GUI window on system startup. (Coming Soon)"
+  },
+  "minimizeToTray": {
+    "label": "Minimize to System Tray",
+    "description": "Closing the window will hide it to the tray. (Coming Soon)"
+  },
+  "developerMode": {
+    "label": "Developer Mode",
+    "description": "Enable verbose diagnostic remap and injection logs."
+  },
+  "languageCardTitle": "Localization",
+  "languageLabel": "Display Language",
+  "languageDescription": "Change application language.",
+  "languageOptionEn": "English",
+  "languageOptionId": "Bahasa Indonesia",
+  "themeCardTitle": "Theme & Interface Customization",
+  "themes": {
+    "dark": {
+      "title": "Carbon Dark",
+      "desc": "Minimal dark interface optimized for OLED panels"
+    },
+    "cyber": {
+      "title": "Cyberpunk Amber",
+      "desc": "Edgy yellow-orange highlights for gaming environments"
+    },
+    "neon": {
+      "title": "Aurora Green",
+      "desc": "Soothing neon mint highlights with glass panel styling"
+    }
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "title": "System Settings",
+  "description": "Atur startup, bahasa, dan preferensi visual.",
+  "startupCardTitle": "Startup & Window Behavior",
+  "startWithWindows": {
+    "label": "Start with Windows",
+    "description": "Jalankan daemon di system tray saat booting. (Coming Soon)"
+  },
+  "startMinimized": {
+    "label": "Start Minimized",
+    "description": "Jangan buka GUI window saat Windows startup. (Coming Soon)"
+  },
+  "minimizeToTray": {
+    "label": "Minimize ke System Tray",
+    "description": "Menutup window akan menyembunyikan aplikasi ke system tray. (Coming Soon)"
+  },
+  "developerMode": {
+    "label": "Developer Mode",
+    "description": "Aktifkan log remap dan injeksi detail untuk diagnostics."
+  },
+  "languageCardTitle": "Localization",
+  "languageLabel": "Display Language",
+  "languageDescription": "Ubah bahasa aplikasi.",
+  "languageOptionEn": "English",
+  "languageOptionId": "Bahasa Indonesia",
+  "themeCardTitle": "Theme & Interface Customization",
+  "themes": {
+    "dark": {
+      "title": "Carbon Dark",
+      "desc": "Tampilan dark minimalis yang dioptimalkan untuk panel OLED."
+    },
+    "cyber": {
+      "title": "Cyberpunk Amber",
+      "desc": "Aksen kuning-oranye yang edgy untuk suasana gaming."
+    },
+    "neon": {
+      "title": "Aurora Green",
+      "desc": "Aksen mint neon lembut dengan style glass panel."
+    }
+  }
+}

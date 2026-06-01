@@ -1,33 +1,39 @@
 import { ContentLayout } from '@/components/layout/content-layout';
 import { ToggleSwitch } from '@/components/common/button';
 import { Card } from '@/components/common/card';
+import { Select } from '@/components/common/select';
+import { LocaleType } from '@/hooks/use-settings-store';
 import { ThemeType, useSettingsStore } from '@/hooks/use-settings-store';
+import { useTranslation } from 'react-i18next';
 
 export function Settings() {
+  const { t } = useTranslation('settings');
   const {
     developerMode,
+    locale,
     theme,
     setDeveloperMode,
+    setLocale,
     setTheme
   } = useSettingsStore();
 
   return (
     <ContentLayout
-      title="System Settings"
-      description="Configure startup behavior and visual preferences."
+      title={t('title')}
+      description={t('description')}
     >
       <div className="w-full flex flex-col gap-6">
         {/* Startup Options */}
-        <Card title="Startup & Window Behavior">
+        <Card title={t('startupCardTitle')}>
           <div className="space-y-4">
             {/* Run on Boot */}
             <div className="flex items-center justify-between opacity-60">
               <div>
                 <label className="text-xs font-semibold text-zinc-200">
-                  Start with Windows
+                  {t('startWithWindows.label')}
                 </label>
                 <p className="text-xs text-zinc-500">
-                  Launch daemon in system tray when booting. (Coming Soon)
+                  {t('startWithWindows.description')}
                 </p>
               </div>
               <ToggleSwitch checked={false} onChange={() => {}} disabled />
@@ -37,10 +43,10 @@ export function Settings() {
             <div className="flex items-center justify-between opacity-60">
               <div>
                 <label className="text-xs font-semibold text-zinc-200">
-                  Start Minimized
+                  {t('startMinimized.label')}
                 </label>
                 <p className="text-xs text-zinc-500">
-                  Do not open the GUI window on system startup. (Coming Soon)
+                  {t('startMinimized.description')}
                 </p>
               </div>
               <ToggleSwitch
@@ -54,10 +60,10 @@ export function Settings() {
             <div className="flex items-center justify-between opacity-60">
               <div>
                 <label className="text-xs font-semibold text-zinc-200">
-                  Minimize to System Tray
+                  {t('minimizeToTray.label')}
                 </label>
                 <p className="text-xs text-zinc-500">
-                  Closing the window will hide it to the tray. (Coming Soon)
+                  {t('minimizeToTray.description')}
                 </p>
               </div>
               <ToggleSwitch
@@ -70,10 +76,10 @@ export function Settings() {
             <div className="flex items-center justify-between">
               <div>
                 <label className="text-xs font-semibold text-zinc-200">
-                  Developer Mode
+                  {t('developerMode.label')}
                 </label>
                 <p className="text-xs text-zinc-500">
-                  Enable verbose diagnostic remap and injection logs.
+                  {t('developerMode.description')}
                 </p>
               </div>
               <ToggleSwitch
@@ -84,24 +90,42 @@ export function Settings() {
           </div>
         </Card>
 
+        <Card title={t('languageCardTitle')}>
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-zinc-200">
+              {t('languageLabel')}
+            </label>
+            <p className="text-xs text-zinc-500">{t('languageDescription')}</p>
+            <Select<LocaleType>
+              value={locale}
+              onChange={setLocale}
+              options={[
+                { value: 'en', label: t('languageOptionEn') },
+                { value: 'id', label: t('languageOptionId') }
+              ]}
+              className="max-w-xs"
+            />
+          </div>
+        </Card>
+
         {/* Visual Engine Preferences */}
-        <Card title="Theme & Interface Customization">
+        <Card title={t('themeCardTitle')}>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[
               {
                 id: 'dark',
-                title: 'Carbon Dark',
-                desc: 'Minimal dark interface optimized for OLED panels'
+                title: t('themes.dark.title'),
+                desc: t('themes.dark.desc')
               },
               {
                 id: 'cyber',
-                title: 'Cyberpunk Amber',
-                desc: 'Edgy yellow-orange highlights for gaming environments'
+                title: t('themes.cyber.title'),
+                desc: t('themes.cyber.desc')
               },
               {
                 id: 'neon',
-                title: 'Aurora Green',
-                desc: 'Soothing neon mint highlights with glass panel styling'
+                title: t('themes.neon.title'),
+                desc: t('themes.neon.desc')
               }
             ].map((item) => (
               <button

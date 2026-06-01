@@ -1,7 +1,9 @@
 import { invoke } from '@tauri-apps/api/core';
 import { create } from 'zustand';
+import i18n, { I18N_LOCALE_STORAGE_KEY } from '@/i18n';
 
 export type ThemeType = 'dark' | 'cyber' | 'neon';
+export type LocaleType = 'en' | 'id';
 
 export interface Mapping {
   button_id: number;
@@ -29,6 +31,7 @@ interface SettingsState {
   developerMode: boolean;
   debounce: number;
   theme: ThemeType;
+  locale: LocaleType;
   activeProfile: string;
   profiles: Profile[];
   hydrate: () => Promise<void>;
@@ -38,6 +41,7 @@ interface SettingsState {
   setDeveloperMode: (val: boolean) => Promise<void>;
   setDebounce: (val: number) => Promise<void>;
   setTheme: (theme: ThemeType) => Promise<void>;
+  setLocale: (locale: LocaleType) => Promise<void>;
   setActiveProfile: (name: string) => Promise<void>;
   saveProfile: (profile: Profile) => Promise<void>;
   createProfile: (name: string) => Promise<void>;
@@ -57,6 +61,9 @@ const parseNum = (value: string | undefined, fallback: number) => {
   return Number.isFinite(n) ? n : fallback;
 };
 
+const parseLocale = (value: string | undefined): LocaleType =>
+  value === 'id' ? 'id' : 'en';
+
 const fetchProfiles = async () => invoke<Profile[]>('get_profiles');
 
 export const useSettingsStore = create<SettingsState>()((set, get) => ({
@@ -67,6 +74,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   developerMode: false,
   debounce: 10,
   theme: 'dark',
+  locale: 'en',
   activeProfile: 'Default',
   profiles: [],
 
@@ -78,7 +86,12 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
 
     const values = settings.values ?? {};
     const theme = (values.theme as ThemeType) || 'dark';
+    const locale = parseLocale(values.locale);
     document.documentElement.setAttribute('data-theme', theme);
+    void i18n.changeLanguage(locale);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(I18N_LOCALE_STORAGE_KEY, locale);
+    }
 
     set({
       ready: true,
@@ -88,6 +101,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
       developerMode: parseBool(values.developerMode, false),
       debounce: parseNum(values.debounce, 10),
       theme,
+      locale,
       activeProfile: values.activeProfile || profiles[0]?.name || 'Default',
       profiles
     });
@@ -122,6 +136,15 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
     set({ theme });
     document.documentElement.setAttribute('data-theme', theme);
     await invoke('save_setting', { key: 'theme', value: theme });
+  },
+
+  setLocale: async (locale) => {
+    set({ locale });
+    await i18n.changeLanguage(locale);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(I18N_LOCALE_STORAGE_KEY, locale);
+    }
+    await invoke('save_setting', { key: 'locale', value: locale });
   },
 
   setActiveProfile: async (name) => {

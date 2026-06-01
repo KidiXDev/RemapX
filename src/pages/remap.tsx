@@ -27,6 +27,7 @@ import {
   Zap
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useDebounce } from 'use-debounce';
 
 interface EngineLogPayload {
@@ -74,6 +75,7 @@ const buttonLabelMap: Record<number, string> = {
 };
 
 export function Remap() {
+  const { t } = useTranslation('remap');
   const {
     profiles,
     activeProfile,
@@ -97,10 +99,10 @@ export function Remap() {
 
   const handleDeleteProfile = async () => {
     const confirmed = await confirm({
-      title: 'Delete Profile',
-      description: `Are you sure you want to delete the profile "${active.name}"? This will permanently remove all configured key bindings.`,
-      confirmText: 'Delete',
-      cancelText: 'Cancel',
+      title: t('profile.renamePromptTitle'),
+      description: `${t('profile.renamePromptDescPrefix')} "${active.name}"${t('profile.renamePromptDescSuffix')}`,
+      confirmText: t('profile.deleteConfirm'),
+      cancelText: t('profile.cancel'),
       variant: 'destructive'
     });
     if (confirmed) {
@@ -310,7 +312,7 @@ export function Remap() {
 
       const time = new Date().toLocaleTimeString();
       setLogs((prev) => [
-        `[${time}] Remapped ${recordingTarget.label} -> ${keyStr}`,
+        `[${time}] ${t('logs.remappedPrefix')} ${recordingTarget.label} ${t('logs.to')} ${keyStr}`,
         ...prev.slice(0, 99)
       ]);
       setRecordingTarget(null);
@@ -345,7 +347,7 @@ export function Remap() {
       });
       const time = new Date().toLocaleTimeString();
       setLogs((prev) => [
-        `[${time}] Auto-switched profile to ${event.payload}`,
+        `[${time}] ${t('logs.autoSwitchedPrefix')} ${event.payload}`,
         ...prev.slice(0, 99)
       ]);
     })
@@ -365,7 +367,7 @@ export function Remap() {
           String(event.payload.button_id);
         const time = new Date().toLocaleTimeString();
         setLogs((prev) => [
-          `[${time}] Button ${label} pressed`,
+          `[${time}] ${t('logs.buttonPressedPrefix')} ${label} ${t('logs.buttonPressedSuffix')}`,
           ...prev.slice(0, 99)
         ]);
       }
@@ -382,14 +384,14 @@ export function Remap() {
       if (unlistenActive) unlistenActive();
       if (unlistenButton) unlistenButton();
     };
-  }, [setActiveProfile, developerMode]);
+  }, [setActiveProfile, developerMode, t]);
 
   const tabOptions = [
     {
       id: 'bindings' as TabType,
-      label: `Key Bindings (${active.mappings.length})`
+      label: `${t('tabs.bindings')} (${active.mappings.length})`
     },
-    { id: 'live' as TabType, label: 'Diagnostics' }
+    { id: 'live' as TabType, label: t('tabs.diagnostics') }
   ];
 
   const onToggleEngine = async () => {
@@ -444,7 +446,7 @@ export function Remap() {
 
   return (
     <>
-      <ContentLayout>
+      <ContentLayout title={t('title')}>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* LEFT/CENTER WORKSPACE COLUMN: Gamepad Canvas & Tabs */}
           <div className="lg:col-span-7 space-y-6 flex flex-col">
@@ -456,11 +458,7 @@ export function Remap() {
                   variant="secondary"
                   onClick={onToggleEngine}
                   disabled={!engineRunning && connectedGamepads.length === 0}
-                  title={
-                    engineRunning
-                      ? 'Stop Input Remapping Engine'
-                      : 'Start Input Remapping Engine'
-                  }
+                  title={engineRunning ? t('engine.stop') : t('engine.start')}
                   className={cn(
                     'h-9 w-9 p-0 flex items-center justify-center rounded-xl border transition-all duration-300 shadow-md',
                     engineRunning
@@ -496,10 +494,10 @@ export function Remap() {
                     </div>
                   </div>
                   <h4 className="text-sm font-bold text-zinc-100 uppercase tracking-wider mb-1">
-                    Waiting for Input
+                    {t('record.title')}
                   </h4>
                   <p className="text-xs text-zinc-400 max-w-xs mb-5 leading-relaxed">
-                    Press any key on your keyboard to assign to{' '}
+                    {t('record.descriptionPrefix')}{' '}
                     <span className="text-primary-text font-bold">
                       {recordingTarget.label}
                     </span>
@@ -510,7 +508,7 @@ export function Remap() {
                     onClick={() => setRecordingTarget(null)}
                     className="px-6 py-2 border-zinc-700/80 hover:border-zinc-500 text-zinc-300 hover:text-zinc-100"
                   >
-                    Cancel
+                    {t('record.cancel')}
                   </Button>
                 </div>
               )}
@@ -534,7 +532,7 @@ export function Remap() {
                         <input
                           value={bindingsQuery}
                           onChange={(e) => setBindingsQuery(e.target.value)}
-                          placeholder="Filter key bindings by input or key..."
+                          placeholder={t('searchBindingsPlaceholder')}
                           className="flex-1 bg-transparent text-xs outline-none text-zinc-200"
                         />
                         {bindingsQuery && (
@@ -552,28 +550,35 @@ export function Remap() {
                       <div className="text-center py-12 border border-dashed border-border-main/50 rounded-xl bg-zinc-950/15">
                         <GamepadIcon className="w-8 h-8 text-zinc-600 mx-auto mb-2.5" />
                         <p className="text-xs text-zinc-400 font-semibold">
-                          No keybindings configured
+                          {t('bindings.emptyTitle')}
                         </p>
                         <p className="text-xs text-zinc-500 mt-1 max-w-[280px] mx-auto leading-relaxed">
-                          Click any highlighted button on the gamepad canvas
-                          above to bind it to a key.
+                          {t('bindings.emptyDesc')}
                         </p>
                       </div>
                     ) : filteredMappings.length === 0 ? (
                       <div className="text-center py-12">
                         <p className="text-xs text-zinc-500">
-                          No matching bindings found for "{bindingsQuery}".
+                          {t('bindings.noMatchPrefix')} "{bindingsQuery}".
                         </p>
                       </div>
                     ) : (
                       <div className="space-y-2">
                         {/* Table Header */}
                         <div className="grid grid-cols-12 text-xs font-bold text-zinc-500 uppercase tracking-widest px-4 mb-1">
-                          <div className="col-span-4">Gamepad Control</div>
+                          <div className="col-span-4">
+                            {t('bindings.headerGamepadControl')}
+                          </div>
                           <div className="col-span-1 text-center"></div>
-                          <div className="col-span-4">Mapped Key</div>
-                          <div className="col-span-2">Type</div>
-                          <div className="col-span-1 text-right">Action</div>
+                          <div className="col-span-4">
+                            {t('bindings.headerMappedKey')}
+                          </div>
+                          <div className="col-span-2">
+                            {t('bindings.headerType')}
+                          </div>
+                          <div className="col-span-1 text-right">
+                            {t('bindings.headerAction')}
+                          </div>
                         </div>
 
                         {/* Mappings Rows */}
@@ -615,7 +620,7 @@ export function Remap() {
                                 <button
                                   onClick={() => onDeleteMapping(map.button_id)}
                                   className="text-zinc-500 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10 transition-all active:scale-95 cursor-pointer"
-                                  title="Delete Mapping"
+                                  title={t('bindings.deleteMapping')}
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>
@@ -637,14 +642,14 @@ export function Remap() {
                         <span className="w-2.5 h-2.5 rounded-full bg-green-500/60" />
                         <span className="text-xs font-bold text-zinc-400 ml-2 tracking-wider flex items-center gap-1">
                           <Terminal className="w-3.5 h-3.5" />
-                          <span>DAEMON_LOG_STREAM</span>
+                          <span>{t('diagnostics.streamTitle')}</span>
                         </span>
                       </div>
                       <button
                         onClick={() => setLogs([])}
                         className="text-xs font-bold text-zinc-400 hover:text-zinc-200 transition bg-zinc-900 border border-border-main px-2 py-0.5 rounded cursor-pointer"
                       >
-                        Clear Logs
+                        {t('diagnostics.clearLogs')}
                       </button>
                     </div>
 
@@ -652,17 +657,18 @@ export function Remap() {
                     <div className="flex-1 p-4 space-y-1 overflow-y-auto scrollbar-thin">
                       {logs.length === 0 ? (
                         <div className="text-zinc-500 italic py-4 text-center">
-                          No diagnostic logs captured yet. Press buttons to
-                          test.
+                          {t('diagnostics.empty')}
                         </div>
                       ) : (
                         logs.map((log, idx) => {
                           let logColor = 'text-zinc-400';
                           if (log.includes('pressed')) {
                             logColor = 'text-primary-text font-semibold';
-                          } else if (log.includes('Remapped')) {
+                          } else if (log.includes(t('logs.remappedPrefix'))) {
                             logColor = 'text-emerald-400';
-                          } else if (log.includes('Auto-switched')) {
+                          } else if (
+                            log.includes(t('logs.autoSwitchedPrefix'))
+                          ) {
                             logColor = 'text-amber-400';
                           }
 
@@ -690,9 +696,9 @@ export function Remap() {
           <div className="lg:col-span-5 space-y-6">
             {/* Active Profile Configuration */}
             <Card className="flex flex-col gap-4 border-border-main/70 bg-bg-card">
-              <div className="flex items-center justify-between border-b border-border-main/30 pb-2">
+              <div className="flex items-center justify-between border-b border-border-main/30">
                 <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
-                  Profile Configuration
+                  {t('profile.title')}
                 </span>
                 <span className="text-xs font-bold text-primary-text bg-primary-bg px-2 py-0.5 rounded-full border border-primary-border">
                   {active.name}
@@ -703,7 +709,7 @@ export function Remap() {
               <div className="space-y-4">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs text-zinc-400">
-                    Select Profile
+                    {t('profile.selectLabel')}
                   </label>
                   <div className="flex gap-2">
                     <Select
@@ -723,7 +729,7 @@ export function Remap() {
                         setIsRenaming(true);
                         setRenameValue(active.name);
                       }}
-                      title="Rename Profile"
+                      title={t('profile.renameTitle')}
                       className="h-9 w-9 p-0 flex items-center justify-center rounded-xl"
                     >
                       <Pencil className="w-3.5 h-3.5" />
@@ -735,7 +741,7 @@ export function Remap() {
                       onClick={() =>
                         duplicateProfile(active.name, `${active.name} Copy`)
                       }
-                      title="Duplicate Profile"
+                      title={t('profile.duplicate')}
                       className="h-9 w-9 p-0 flex items-center justify-center rounded-xl"
                     >
                       <Copy className="w-3.5 h-3.5 text-zinc-400" />
@@ -746,7 +752,7 @@ export function Remap() {
                       variant="destructive"
                       onClick={handleDeleteProfile}
                       disabled={profiles.length <= 1}
-                      title="Delete Profile"
+                      title={t('profile.renamePromptTitle')}
                       className="h-9 w-9 p-0 flex items-center justify-center rounded-xl"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -758,14 +764,14 @@ export function Remap() {
                 {isRenaming && (
                   <div className="p-3 rounded-xl border border-primary-border bg-primary-bg/10 space-y-2 animate-fade-in">
                     <span className="text-xs font-bold text-primary-text uppercase tracking-wider">
-                      Rename Profile
+                      {t('profile.renameTitle')}
                     </span>
                     <div className="flex gap-2">
                       <input
                         value={renameValue}
                         onChange={(e) => setRenameValue(e.target.value)}
                         className="flex-1 rounded-lg bg-zinc-950/80 border border-border-main px-3 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-primary"
-                        placeholder="New profile name"
+                        placeholder={t('profile.renamePlaceholder')}
                         autoFocus
                       />
                       <Button
@@ -773,14 +779,14 @@ export function Remap() {
                         onClick={onRenameProfile}
                         className="h-8 py-0 px-3 text-xs"
                       >
-                        Save
+                        {t('profile.save')}
                       </Button>
                       <Button
                         variant="secondary"
                         onClick={() => setIsRenaming(false)}
                         className="h-8 py-0 px-3 text-xs"
                       >
-                        Cancel
+                        {t('profile.cancel')}
                       </Button>
                     </div>
                   </div>
@@ -794,18 +800,18 @@ export function Remap() {
                     className="w-full justify-center gap-1 py-2 text-xs border-dashed border-border-main/70 hover:border-zinc-500 hover:bg-zinc-900/10 text-zinc-300"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    <span>Create New Profile</span>
+                    <span>{t('profile.createTrigger')}</span>
                   </Button>
                 ) : (
                   <div className="p-3 rounded-xl border border-border-main bg-zinc-900/20 space-y-2 animate-fade-in">
                     <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">
-                      Create Profile
+                      {t('profile.createTitle')}
                     </span>
                     <div className="flex gap-2">
                       <input
                         value={newProfileName}
                         onChange={(e) => setNewProfileName(e.target.value)}
-                        placeholder="Profile name..."
+                        placeholder={t('profile.createPlaceholder')}
                         className="flex-1 rounded-lg bg-zinc-950/80 border border-border-main px-3 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-primary"
                         autoFocus
                       />
@@ -814,14 +820,14 @@ export function Remap() {
                         onClick={onCreateProfile}
                         className="h-8 py-0 px-3 text-xs"
                       >
-                        Create
+                        {t('profile.create')}
                       </Button>
                       <Button
                         variant="secondary"
                         onClick={() => setIsCreatingProfile(false)}
                         className="h-8 py-0 px-3 text-xs"
                       >
-                        Cancel
+                        {t('profile.cancel')}
                       </Button>
                     </div>
                   </div>
@@ -831,7 +837,7 @@ export function Remap() {
               {/* Profile Slider Settings */}
               <div className="border-t border-border-main/30 pt-4 space-y-4">
                 <Slider
-                  label="Debounce"
+                  label={t('profile.debounceLabel')}
                   value={active.debounce_ms}
                   onChange={async (val) => {
                     await saveProfile({ ...active, debounce_ms: val });
@@ -839,11 +845,11 @@ export function Remap() {
                   min={0}
                   max={100}
                   suffix="ms"
-                  description="Filters hardware switch chatter on button activations to prevent double clicks."
+                  description={t('profile.debounceDesc')}
                 />
 
                 <Slider
-                  label="Joystick Deadzone"
+                  label={t('profile.deadzoneLabel')}
                   value={Math.round((active.axis_deadzone ?? 0.0) * 100)}
                   onChange={async (val) => {
                     await saveProfile({ ...active, axis_deadzone: val / 100 });
@@ -851,7 +857,7 @@ export function Remap() {
                   min={0}
                   max={50}
                   suffix="%"
-                  description="Inner circular deadzone threshold for sticks to prevent stick drift."
+                  description={t('profile.deadzoneDesc')}
                 />
               </div>
             </Card>
@@ -860,7 +866,7 @@ export function Remap() {
             <Card className="flex flex-col gap-4 border-border-main/70 bg-bg-card">
               <div className="flex items-center justify-between border-b border-border-main/30 pb-2">
                 <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
-                  Target Applications
+                  {t('targets.title')}
                 </span>
                 <Button
                   variant="secondary"
@@ -872,21 +878,20 @@ export function Remap() {
                   className="py-1 px-2.5 h-7 rounded-lg text-xs font-bold"
                 >
                   <Plus className="w-3 h-3 text-zinc-400" />
-                  <span>Browse App</span>
+                  <span>{t('targets.browseApp')}</span>
                 </Button>
               </div>
 
               {targetList.length === 0 ? (
                 <div className="p-3 border border-dashed border-border-main/40 rounded-xl bg-zinc-950/10 text-center">
                   <p className="text-xs py-4 text-zinc-400 font-semibold">
-                    Global Mode Active
+                    {t('targets.globalTitle')}
                   </p>
                 </div>
               ) : (
                 <div className="space-y-2">
                   <p className="text-xs text-zinc-500">
-                    This profile activates automatically when any of these
-                    executables are focused:
+                    {t('targets.listDesc')}
                   </p>
                   <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto pr-1 scrollbar-thin">
                     {targetList.map((target) => (
@@ -898,7 +903,7 @@ export function Remap() {
                         <button
                           onClick={() => onRemoveTarget(target)}
                           className="text-zinc-500 hover:text-red-400 p-0.5 rounded transition cursor-pointer"
-                          title={`Remove ${target}`}
+                          title={`${t('targets.remove')} ${target}`}
                         >
                           <X className="w-3 h-3" />
                         </button>
@@ -915,7 +920,7 @@ export function Remap() {
                 <div className="flex items-center gap-1.5">
                   <GamepadIcon className="w-4 h-4 text-zinc-400" />
                   <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
-                    Hardware Status
+                    {t('hardware.title')}
                   </span>
                 </div>
                 <button
@@ -928,7 +933,7 @@ export function Remap() {
                   <RefreshCw
                     className={`w-3 h-3 ${isLoadingGamepads ? 'animate-spin' : ''}`}
                   />
-                  <span>Scan</span>
+                  <span>{t('hardware.scan')}</span>
                 </button>
               </div>
 
@@ -936,16 +941,16 @@ export function Remap() {
                 <div className="flex items-center justify-center py-6 animate-fade-in">
                   <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin mr-2" />
                   <span className="text-xs text-zinc-500">
-                    Scanning USB ports...
+                    {t('hardware.scanning')}
                   </span>
                 </div>
               ) : connectedGamepads.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-6 text-center border border-dashed border-border-main/50 rounded-xl bg-zinc-950/15">
                   <p className="text-xs text-zinc-500 font-semibold">
-                    No controller detected
+                    {t('hardware.emptyTitle')}
                   </p>
                   <p className="text-xs text-zinc-600 mt-1 max-w-[200px] leading-normal">
-                    Connect a controller via USB or Bluetooth and click Scan.
+                    {t('hardware.emptyDesc')}
                   </p>
                 </div>
               ) : (
@@ -989,8 +994,8 @@ export function Remap() {
       <Dialog
         open={isProcessDialogOpen}
         onClose={() => setIsProcessDialogOpen(false)}
-        title="Process Explorer"
-        description="Select foreground game or application executables. System services and background processes are hidden."
+        title={t('process.title')}
+        description={t('process.description')}
         className="border-border-main/70"
       >
         <div className="space-y-4">
@@ -999,7 +1004,7 @@ export function Remap() {
             <input
               value={processQuery}
               onChange={(e) => setProcessQuery(e.target.value)}
-              placeholder="Search executable name..."
+              placeholder={t('process.searchPlaceholder')}
               className="flex-1 bg-transparent text-xs outline-none text-zinc-200"
             />
           </div>
@@ -1009,12 +1014,12 @@ export function Remap() {
               <div className="flex items-center justify-center py-10 animate-fade-in">
                 <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin mr-3.5" />
                 <span className="text-xs text-zinc-500">
-                  Retrieving active windows...
+                  {t('process.loading')}
                 </span>
               </div>
             ) : processes.length === 0 ? (
               <p className="text-xs text-zinc-500 py-10 text-center">
-                No matching processes with visible windows found.
+                {t('process.empty')}
               </p>
             ) : (
               processes.map((proc) => {
@@ -1033,7 +1038,7 @@ export function Remap() {
                           {proc.exe_name}
                         </p>
                         <p className="text-xs font-mono text-zinc-500">
-                          PID: {proc.pid}
+                          {t('process.pidPrefix')} {proc.pid}
                         </p>
                       </div>
                     </div>
@@ -1045,7 +1050,7 @@ export function Remap() {
                         }
                         className="py-1 px-3 h-8 rounded-lg text-xs"
                       >
-                        Remove
+                        {t('targets.remove')}
                       </Button>
                     ) : (
                       <Button
@@ -1053,7 +1058,7 @@ export function Remap() {
                         onClick={() => onAddTarget(proc.exe_name.toLowerCase())}
                         className="py-1 px-3 h-8 rounded-lg text-xs"
                       >
-                        Add App
+                        {t('targets.addApp')}
                       </Button>
                     )}
                   </div>
