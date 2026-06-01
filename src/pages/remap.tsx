@@ -13,13 +13,13 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import {
   Activity,
+  Copy,
   Gamepad as GamepadIcon,
   Pause,
   Pencil,
   Play,
   Plus,
   RefreshCw,
-  Save,
   Search,
   Terminal,
   Trash2,
@@ -115,6 +115,7 @@ export function Remap() {
     ConnectedGamepad[]
   >([]);
   const [isLoadingGamepads, setIsLoadingGamepads] = useState(false);
+  const [showGamepadLoading, setShowGamepadLoading] = useState(false);
 
   const [recordingTarget, setRecordingTarget] = useState<{
     buttonId: number;
@@ -131,6 +132,7 @@ export function Remap() {
   const [debouncedProcessQuery] = useDebounce(processQuery, 250);
   const [processes, setProcesses] = useState<ActiveProcess[]>([]);
   const [isLoadingProcesses, setIsLoadingProcesses] = useState(false);
+  const [showProcessLoading, setShowProcessLoading] = useState(false);
 
   const [bindingsQuery, setBindingsQuery] = useState('');
 
@@ -190,6 +192,32 @@ export function Remap() {
       loadProcesses(debouncedProcessQuery);
     }
   }, [debouncedProcessQuery, isProcessDialogOpen]);
+
+  useEffect(() => {
+    if (!isLoadingGamepads) {
+      setShowGamepadLoading(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setShowGamepadLoading(true);
+    }, 150);
+
+    return () => window.clearTimeout(timer);
+  }, [isLoadingGamepads]);
+
+  useEffect(() => {
+    if (!isLoadingProcesses) {
+      setShowProcessLoading(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setShowProcessLoading(true);
+    }, 150);
+
+    return () => window.clearTimeout(timer);
+  }, [isLoadingProcesses]);
 
   useEffect(() => {
     invoke('start_engine')
@@ -369,40 +397,33 @@ export function Remap() {
 
   return (
     <>
-      <ContentLayout
-        title="Remap Canvas"
-        actions={
-          <>
-            <Button variant="primary" onClick={onToggleEngine}>
-              {engineRunning ? (
-                <>
-                  <Pause className="w-3.5 h-3.5" />
-                  <span>Stop Engine</span>
-                </>
-              ) : (
-                <>
-                  <Play className="w-3.5 h-3.5" />
-                  <span>Start Engine</span>
-                </>
-              )}
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() =>
-                duplicateProfile(active.name, `${active.name} Copy`)
-              }
-            >
-              <Save className="w-3.5 h-3.5 text-zinc-400" />
-              <span>Duplicate</span>
-            </Button>
-          </>
-        }
-      >
+      <ContentLayout>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* LEFT/CENTER WORKSPACE COLUMN: Gamepad Canvas & Tabs */}
           <div className="lg:col-span-7 space-y-6 flex flex-col">
             {/* Gamepad Canvas Card */}
             <Card className="relative flex flex-col items-center justify-center p-6 border-border-main/70 bg-bg-card min-h-[380px] overflow-hidden">
+              {/* Start/Stop Engine Button */}
+              <div className="absolute top-4 right-4 z-10">
+                <Button
+                  variant="secondary"
+                  onClick={onToggleEngine}
+                  title={engineRunning ? "Stop Input Remapping Engine" : "Start Input Remapping Engine"}
+                  className={cn(
+                    "h-9 w-9 p-0 flex items-center justify-center rounded-xl border transition-all duration-300 shadow-md",
+                    engineRunning
+                      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20 hover:border-emerald-500/50 shadow-emerald-500/5"
+                      : "bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/20 hover:border-red-500/50 shadow-red-500/5"
+                  )}
+                >
+                  {engineRunning ? (
+                    <Pause className="w-4 h-4 animate-pulse" />
+                  ) : (
+                    <Play className="w-4 h-4" />
+                  )}
+                </Button>
+              </div>
+
               <div className="w-full flex justify-center py-4">
                 <Gamepad
                   onButtonPress={() => {}}
@@ -656,6 +677,18 @@ export function Remap() {
                       <Pencil className="w-3.5 h-3.5" />
                     </Button>
 
+                    {/* Duplicate Action */}
+                    <Button
+                      variant="secondary"
+                      onClick={() =>
+                        duplicateProfile(active.name, `${active.name} Copy`)
+                      }
+                      title="Duplicate Profile"
+                      className="h-9 w-9 p-0 flex items-center justify-center rounded-xl"
+                    >
+                      <Copy className="w-3.5 h-3.5 text-zinc-400" />
+                    </Button>
+
                     {/* Delete Action */}
                     <Button
                       variant="destructive"
@@ -849,8 +882,8 @@ export function Remap() {
                 </button>
               </div>
 
-              {isLoadingGamepads ? (
-                <div className="flex items-center justify-center py-6">
+              {showGamepadLoading ? (
+                <div className="flex items-center justify-center py-6 animate-fade-in">
                   <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin mr-2" />
                   <span className="text-xs text-zinc-500">
                     Scanning USB ports...
@@ -922,8 +955,8 @@ export function Remap() {
           </div>
 
           <div className="max-h-72 overflow-y-auto space-y-2 pr-1 scrollbar-thin">
-            {isLoadingProcesses ? (
-              <div className="flex items-center justify-center py-10">
+            {showProcessLoading ? (
+              <div className="flex items-center justify-center py-10 animate-fade-in">
                 <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin mr-3.5" />
                 <span className="text-xs text-zinc-500">
                   Retrieving active windows...

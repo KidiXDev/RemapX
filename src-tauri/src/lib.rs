@@ -6,10 +6,11 @@ use db::{Profile, SettingsPayload};
 use gilrs::{Axis, Button, EventType, GamepadId, Gilrs};
 use serde::Serialize;
 use std::collections::{HashMap, HashSet};
+use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter, State};
 #[cfg(target_os = "windows")]
 use windows_sys::Win32::System::Threading::GetCurrentProcessId;
@@ -105,6 +106,39 @@ struct ActiveProcess {
     exe_name: String,
 }
 
+static LAST_TRIGGER_TIMES: OnceLock<Mutex<HashMap<i64, Instant>>> = OnceLock::new();
+
+fn get_active_profile() -> Option<Profile> {
+    let active_profile = db::get_settings()
+        .ok()
+        .and_then(|s| s.values.get("activeProfile").cloned())
+        .unwrap_or_else(|| "Default".to_string());
+
+    db::get_profiles()
+        .ok()
+        .and_then(|profiles| profiles.into_iter().find(|p| p.name == active_profile))
+}
+
+fn allow_by_debounce(button_id: i64, debounce_ms: i64) -> bool {
+    let debounce_ms = debounce_ms.max(0) as u64;
+    if debounce_ms == 0 {
+        return true;
+    }
+
+    let now = Instant::now();
+    let map = LAST_TRIGGER_TIMES.get_or_init(|| Mutex::new(HashMap::new()));
+    if let Ok(mut guard) = map.lock() {
+        if let Some(last) = guard.get(&button_id) {
+            if now.duration_since(*last).as_millis() < debounce_ms as u128 {
+                return false;
+            }
+        }
+        guard.insert(button_id, now);
+        return true;
+    }
+    true
+}
+
 #[tauri::command]
 fn start_engine(app: AppHandle, engine: State<'_, EngineState>) -> Result<(), String> {
     if engine.running.swap(true, Ordering::SeqCst) {
@@ -182,9 +216,15 @@ fn start_engine(app: AppHandle, engine: State<'_, EngineState>) -> Result<(), St
                         );
                     }
                     EventType::ButtonChanged(btn, value, _) => {
+                        let profile_deadzone = get_active_profile()
+                            .map(|p| p.axis_deadzone)
+                            .unwrap_or(0.12)
+                            .clamp(0.0, 1.0) as f32;
+                        let press_threshold = profile_deadzone.max(0.5);
+                        let release_threshold = (press_threshold - 0.2).max(0.2);
                         let was_pressed = *changed_button_state.get(&btn).unwrap_or(&false);
-                        let is_pressed = value >= 0.5;
-                        let is_released = value <= 0.3;
+                        let is_pressed = value >= press_threshold;
+                        let is_released = value <= release_threshold;
 
                         if is_pressed && !was_pressed {
                             changed_button_state.insert(btn, true);
@@ -273,8 +313,13 @@ fn start_engine(app: AppHandle, engine: State<'_, EngineState>) -> Result<(), St
                     }
 
                     let buttons = state.Gamepad.wButtons;
-                    let left_trigger = state.Gamepad.bLeftTrigger >= 30;
-                    let right_trigger = state.Gamepad.bRightTrigger >= 30;
+                    let profile_deadzone = get_active_profile()
+                        .map(|p| p.axis_deadzone)
+                        .unwrap_or(0.12)
+                        .clamp(0.0, 1.0);
+                    let trigger_threshold = ((profile_deadzone * 255.0).round() as u8).max(30);
+                    let left_trigger = state.Gamepad.bLeftTrigger >= trigger_threshold;
+                    let right_trigger = state.Gamepad.bRightTrigger >= trigger_threshold;
                     let now = [
                         (buttons & XINPUT_GAMEPAD_A) != 0,
                         (buttons & XINPUT_GAMEPAD_B) != 0,
@@ -403,32 +448,28 @@ fn trigger_mapping_action(button_id: i64, app: &AppHandle) {
         return;
     }
 
-    let active_profile = db::get_settings()
-        .ok()
-        .and_then(|s| s.values.get("activeProfile").cloned())
-        .unwrap_or_else(|| "Default".to_string());
+    let Some(profile) = get_active_profile() else {
+        emit_engine_log(app, "Remap skipped: active profile not found", false);
+        return;
+    };
+    let active_profile = profile.name.clone();
+
+    if !allow_by_debounce(button_id, profile.debounce_ms) {
+        emit_engine_log(
+            app,
+            format!(
+                "Remap blocked by debounce: button={button_id}, debounce_ms={}",
+                profile.debounce_ms
+            ),
+            true,
+        );
+        return;
+    }
     emit_engine_log(
         app,
         format!("Remap lookup: button={button_id}, active_profile={active_profile}"),
         true,
     );
-
-    let profiles = match db::get_profiles() {
-        Ok(p) => p,
-        Err(err) => {
-            emit_engine_log(
-                app,
-                format!("Remap lookup failed: cannot load profiles: {err}"),
-                false,
-            );
-            return;
-        }
-    };
-
-    let Some(profile) = profiles.into_iter().find(|p| p.name == active_profile) else {
-        emit_engine_log(app, "Remap skipped: active profile not found", false);
-        return;
-    };
 
     let Some(mapping) = profile
         .mappings
