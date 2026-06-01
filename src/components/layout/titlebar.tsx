@@ -1,6 +1,12 @@
 import { Button } from '@/components/common/button';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { ArrowLeft, Gamepad2, Settings as SettingsIcon, X } from 'lucide-react';
+import {
+  ArrowLeft,
+  Gamepad2,
+  Minus,
+  Settings as SettingsIcon,
+  X
+} from 'lucide-react';
 import { type MouseEvent } from 'react';
 import { Link } from 'react-router';
 
@@ -16,6 +22,11 @@ export function Titlebar({ isSettingsPage }: TitlebarProps) {
   const onClose = async () => {
     if (!canUseTauriWindow) return;
     await getCurrentWindow().close();
+  };
+
+  const onMinimize = async () => {
+    if (!canUseTauriWindow) return;
+    await getCurrentWindow().minimize();
   };
 
   const onTitlebarMouseDown = async (event: MouseEvent<HTMLDivElement>) => {
@@ -63,6 +74,12 @@ export function Titlebar({ isSettingsPage }: TitlebarProps) {
         <div className="w-px mx-1 bg-border-main my-2.5" />
 
         <div className="flex items-stretch h-full">
+          <button
+            className="w-12 h-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-800 active:bg-zinc-800/80 transition-colors duration-100"
+            onClick={onMinimize}
+          >
+            <Minus className="size-4" strokeWidth={1.5} />
+          </button>
           <button
             className="w-12 h-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-red-700 active:bg-red-700/80 transition-colors duration-100"
             onClick={onClose}
