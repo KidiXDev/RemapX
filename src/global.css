@@ -13,6 +13,13 @@
   --primary-bg: rgba(8, 51, 68, 0.2);
   --primary-border: rgba(21, 94, 117, 0.4);
   --primary-text: #22d3ee;
+
+  --destructive: #dc2626;
+  --destructive-hover: #ef4444;
+  --destructive-glow: rgba(239, 68, 68, 0.2);
+  --destructive-bg: rgba(127, 29, 29, 0.2);
+  --destructive-border: rgba(153, 27, 27, 0.4);
+  --destructive-text: #f87171;
 }
 
 [data-theme='dark'] {
@@ -28,6 +35,13 @@
   --primary-bg: rgba(8, 51, 68, 0.2);
   --primary-border: rgba(21, 94, 117, 0.4);
   --primary-text: #22d3ee;
+
+  --destructive: #dc2626;
+  --destructive-hover: #ef4444;
+  --destructive-glow: rgba(239, 68, 68, 0.2);
+  --destructive-bg: rgba(127, 29, 29, 0.2);
+  --destructive-border: rgba(153, 27, 27, 0.4);
+  --destructive-text: #f87171;
 }
 
 [data-theme='cyber'] {
@@ -43,6 +57,13 @@
   --primary-bg: rgba(69, 39, 0, 0.25);
   --primary-border: rgba(146, 64, 14, 0.4);
   --primary-text: #fbbf24;
+
+  --destructive: #e11d48;
+  --destructive-hover: #fb7185;
+  --destructive-glow: rgba(244, 63, 94, 0.2);
+  --destructive-bg: rgba(136, 19, 55, 0.25);
+  --destructive-border: rgba(159, 18, 57, 0.4);
+  --destructive-text: #fda4af;
 }
 
 [data-theme='neon'] {
@@ -58,6 +79,13 @@
   --primary-bg: rgba(2, 44, 25, 0.25);
   --primary-border: rgba(6, 95, 70, 0.4);
   --primary-text: #34d399;
+
+  --destructive: #db2777;
+  --destructive-hover: #f472b6;
+  --destructive-glow: rgba(236, 72, 153, 0.2);
+  --destructive-bg: rgba(131, 24, 67, 0.25);
+  --destructive-border: rgba(157, 23, 77, 0.4);
+  --destructive-text: #f9a8d4;
 }
 
 @theme {
@@ -73,6 +101,13 @@
   --color-primary-bg: var(--primary-bg);
   --color-primary-border: var(--primary-border);
   --color-primary-text: var(--primary-text);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-hover: var(--destructive-hover);
+  --color-destructive-glow: var(--destructive-glow);
+  --color-destructive-bg: var(--destructive-bg);
+  --color-destructive-border: var(--destructive-border);
+  --color-destructive-text: var(--destructive-text);
 
   --animate-fade-in: fade-in 0.3s ease-out;
 

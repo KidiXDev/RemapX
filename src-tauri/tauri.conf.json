@@ -12,9 +12,11 @@
   "app": {
     "windows": [
       {
-        "title": "gamepad-remapper",
-        "width": 800,
-        "height": 600
+        "title": "RemapX",
+        "width": 1280,
+        "height": 720,
+        "resizable": false,
+        "decorations": false
       }
     ],
     "security": {

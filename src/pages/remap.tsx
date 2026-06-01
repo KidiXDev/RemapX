@@ -1,6 +1,7 @@
 import { Button } from '@/components/common/button';
 import { Card } from '@/components/common/card';
 import { Tabs } from '@/components/common/tabs';
+import { ContentLayout } from '@/components/layout/content-layout';
 import { Gamepad } from '@/components/template/gamepad';
 import { ChevronsRight, Play, RotateCcw, Save, Trash2 } from 'lucide-react';
 import { useState } from 'react';
@@ -96,19 +97,11 @@ export function Remap() {
   ];
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-6xl mx-auto">
-      {/* Header Info */}
-      <section className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-2xl font-extrabold text-zinc-100 tracking-tight">
-            Remap Canvas
-          </h2>
-          <p className="text-xs text-zinc-500">
-            Configure trigger deadzones, stick curves, and custom button
-            assignments.
-          </p>
-        </div>
-        <div className="flex gap-2.5">
+    <ContentLayout
+      title="Remap Canvas"
+      description="Configure trigger deadzones, stick curves, and custom button assignments."
+      actions={
+        <>
           <Button variant="primary">
             <Save className="w-3.5 h-3.5" />
             <span>Save Config</span>
@@ -117,9 +110,9 @@ export function Remap() {
             <RotateCcw className="w-3.5 h-3.5 text-zinc-400" />
             <span>Revert Changes</span>
           </Button>
-        </div>
-      </section>
-
+        </>
+      }
+    >
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Hand Controller Graphic */}
@@ -215,7 +208,7 @@ export function Remap() {
           </div>
         </Card>
       </div>
-    </div>
+    </ContentLayout>
   );
 }
 
