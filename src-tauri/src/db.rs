@@ -83,10 +83,10 @@ fn seed_if_needed(conn: &Connection) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
         let defaults = [
-            (0_i64, "Space", "Keyboard"),
+            (0_i64, "SPACE", "Keyboard"),
             (1_i64, "R", "Keyboard"),
-            (2_i64, "MouseLeft", "Mouse"),
-            (3_i64, "MouseRight", "Mouse"),
+            (2_i64, "MOUSELEFT", "Mouse"),
+            (3_i64, "MOUSERIGHT", "Mouse"),
         ];
 
         for (button_id, key_str, mapping_type) in defaults {
@@ -170,7 +170,9 @@ fn get_profile_mappings(conn: &Connection, name: &str) -> Result<Vec<Mapping>, S
 pub fn get_profiles() -> Result<Vec<Profile>, String> {
     let conn = open_connection()?;
     let mut stmt = conn
-        .prepare("SELECT name, debounce_ms, axis_deadzone, target_exe FROM profiles ORDER BY name ASC")
+        .prepare(
+            "SELECT name, debounce_ms, axis_deadzone, target_exe FROM profiles ORDER BY name ASC",
+        )
         .map_err(|e| e.to_string())?;
 
     let rows = stmt
@@ -239,6 +241,59 @@ pub fn delete_profile(name: &str) -> Result<(), String> {
     conn.execute("DELETE FROM profiles WHERE name=?1", params![name])
         .map_err(|e| e.to_string())?;
     Ok(())
+}
+
+pub fn create_profile(name: &str) -> Result<Profile, String> {
+    if name.trim().is_empty() {
+        return Err("Profile name cannot be empty".to_string());
+    }
+
+    let exists = get_profiles()?
+        .into_iter()
+        .any(|profile| profile.name.eq_ignore_ascii_case(name));
+    if exists {
+        return Err(format!("Profile '{}' already exists", name));
+    }
+
+    let profile = Profile {
+        name: name.trim().to_string(),
+        debounce_ms: 10,
+        axis_deadzone: 0.12,
+        target_exe: String::new(),
+        mappings: vec![],
+    };
+    save_profile(&profile)?;
+    Ok(profile)
+}
+
+pub fn rename_profile(old_name: &str, new_name: &str) -> Result<Profile, String> {
+    if new_name.trim().is_empty() {
+        return Err("New profile name cannot be empty".to_string());
+    }
+
+    let mut profiles = get_profiles()?;
+    let source = profiles
+        .iter_mut()
+        .find(|profile| profile.name == old_name)
+        .ok_or_else(|| format!("Profile '{}' not found", old_name))?
+        .clone();
+
+    if source.name.eq_ignore_ascii_case(new_name) {
+        return Ok(source);
+    }
+
+    let exists = get_profiles()?
+        .into_iter()
+        .any(|profile| profile.name.eq_ignore_ascii_case(new_name));
+    if exists {
+        return Err(format!("Profile '{}' already exists", new_name));
+    }
+
+    let mut renamed = source;
+    renamed.name = new_name.trim().to_string();
+    save_profile(&renamed)?;
+    delete_profile(old_name)?;
+    Ok(renamed)
 }
 
 pub fn duplicate_profile(name: &str, new_name: &str) -> Result<Profile, String> {

@@ -9,10 +9,15 @@ interface GamepadStatePayload {
 
 interface GamepadProps {
   onButtonPress: (button: string) => void;
+  onControlSelect?: (buttonId: number, label: string) => void;
   mappings?: Mapping[];
 }
 
-export function Gamepad({ onButtonPress, mappings = [] }: GamepadProps) {
+export function Gamepad({
+  onButtonPress,
+  onControlSelect,
+  mappings = []
+}: GamepadProps) {
   const [pressedButtons, setPressedButtons] = useState<Record<number, boolean>>(
     {}
   );
@@ -34,6 +39,45 @@ export function Gamepad({ onButtonPress, mappings = [] }: GamepadProps) {
     return () => {
       if (unlisten) unlisten();
     };
+  }, []);
+
+  useEffect(() => {
+    let raf = 0;
+
+    const pollBrowserGamepad = () => {
+      const pads =
+        typeof navigator !== 'undefined' ? navigator.getGamepads?.() : null;
+      const next: Record<number, boolean> = {};
+
+      if (pads) {
+        for (const pad of pads) {
+          if (!pad) continue;
+          if (pad.buttons[0]?.pressed) next[0] = true;
+          if (pad.buttons[1]?.pressed) next[1] = true;
+          if (pad.buttons[2]?.pressed) next[2] = true;
+          if (pad.buttons[3]?.pressed) next[3] = true;
+          if (pad.buttons[4]?.pressed) next[4] = true;
+          if (pad.buttons[5]?.pressed) next[5] = true;
+          if (pad.buttons[6]?.pressed) next[6] = true;
+          if (pad.buttons[7]?.pressed) next[7] = true;
+          if (pad.buttons[8]?.pressed) next[8] = true;
+          if (pad.buttons[9]?.pressed) next[9] = true;
+          if (pad.buttons[10]?.pressed) next[11] = true;
+          if (pad.buttons[11]?.pressed) next[12] = true;
+          if (pad.buttons[12]?.pressed) next[13] = true;
+          if (pad.buttons[13]?.pressed) next[14] = true;
+          if (pad.buttons[14]?.pressed) next[15] = true;
+          if (pad.buttons[15]?.pressed) next[16] = true;
+          if (pad.buttons[16]?.pressed) next[10] = true;
+        }
+      }
+
+      setPressedButtons(next);
+      raf = requestAnimationFrame(pollBrowserGamepad);
+    };
+
+    raf = requestAnimationFrame(pollBrowserGamepad);
+    return () => cancelAnimationFrame(raf);
   }, []);
 
   // Helper to format hover text showing what the button maps to
@@ -61,6 +105,11 @@ export function Gamepad({ onButtonPress, mappings = [] }: GamepadProps) {
   const pressedDDown = !!pressedButtons[14];
   const pressedDLeft = !!pressedButtons[15];
   const pressedDRight = !!pressedButtons[16];
+
+  const handleControlClick = (buttonId: number, label: string) => {
+    onButtonPress(label);
+    onControlSelect?.(buttonId, label);
+  };
 
   return (
     <div className="relative w-full max-w-[340px] aspect-[5/3] my-4 group select-none">
@@ -97,7 +146,7 @@ export function Gamepad({ onButtonPress, mappings = [] }: GamepadProps) {
         
         {/* Left Side: LT (top capsule) and LB (bottom pill) */}
         {/* Left Trigger (LT) */}
-        <g className="cursor-pointer" onClick={() => onButtonPress('Left Trigger')}>
+        <g className="cursor-pointer" onClick={() => handleControlClick(6, 'Left Trigger')}>
           <rect
             x="24"
             y="3.5"
@@ -114,7 +163,7 @@ export function Gamepad({ onButtonPress, mappings = [] }: GamepadProps) {
         </g>
 
         {/* Left Bumper (LB) */}
-        <g className="cursor-pointer" onClick={() => onButtonPress('Left Bumper')}>
+        <g className="cursor-pointer" onClick={() => handleControlClick(4, 'Left Bumper')}>
           <rect
             x="22"
             y="9.8"
@@ -132,7 +181,7 @@ export function Gamepad({ onButtonPress, mappings = [] }: GamepadProps) {
 
         {/* Right Side: RT (top capsule) and RB (bottom pill) */}
         {/* Right Trigger (RT) */}
-        <g className="cursor-pointer" onClick={() => onButtonPress('Right Trigger')}>
+        <g className="cursor-pointer" onClick={() => handleControlClick(7, 'Right Trigger')}>
           <rect
             x="72"
             y="3.5"
@@ -149,7 +198,7 @@ export function Gamepad({ onButtonPress, mappings = [] }: GamepadProps) {
         </g>
 
         {/* Right Bumper (RB) */}
-        <g className="cursor-pointer" onClick={() => onButtonPress('Right Bumper')}>
+        <g className="cursor-pointer" onClick={() => handleControlClick(5, 'Right Bumper')}>
           <rect
             x="70"
             y="9.8"
@@ -190,7 +239,7 @@ export function Gamepad({ onButtonPress, mappings = [] }: GamepadProps) {
         />
 
         {/* Mode / Guide Button (Center) */}
-        <g className="cursor-pointer" onClick={() => onButtonPress('Mode Button')}>
+        <g className="cursor-pointer" onClick={() => handleControlClick(10, 'Mode Button')}>
           <circle
             cx="50"
             cy="28"
@@ -214,7 +263,7 @@ export function Gamepad({ onButtonPress, mappings = [] }: GamepadProps) {
         </g>
 
         {/* Select / Back Button */}
-        <g className="cursor-pointer" onClick={() => onButtonPress('Select Button')}>
+        <g className="cursor-pointer" onClick={() => handleControlClick(8, 'Select Button')}>
           <rect
             x="39.5"
             y="27.25"
@@ -232,7 +281,7 @@ export function Gamepad({ onButtonPress, mappings = [] }: GamepadProps) {
         </g>
 
         {/* Start / Options Button */}
-        <g className="cursor-pointer" onClick={() => onButtonPress('Start Button')}>
+        <g className="cursor-pointer" onClick={() => handleControlClick(9, 'Start Button')}>
           <rect
             x="57.5"
             y="27.25"
@@ -259,7 +308,7 @@ export function Gamepad({ onButtonPress, mappings = [] }: GamepadProps) {
 
         {/* Interactive D-Pad Directions */}
         {/* D-Pad Up */}
-        <g className="cursor-pointer" onClick={() => onButtonPress('D-Pad Up')}>
+        <g className="cursor-pointer" onClick={() => handleControlClick(13, 'D-Pad Up')}>
           <path
             d="M 23.5 29.5 L 26.5 29.5 L 26.5 26.5 C 26.5 25.5, 23.5 25.5, 23.5 26.5 Z"
             fill={pressedDUp ? 'var(--primary)' : '#27272a'}
@@ -272,7 +321,7 @@ export function Gamepad({ onButtonPress, mappings = [] }: GamepadProps) {
         </g>
 
         {/* D-Pad Down */}
-        <g className="cursor-pointer" onClick={() => onButtonPress('D-Pad Down')}>
+        <g className="cursor-pointer" onClick={() => handleControlClick(14, 'D-Pad Down')}>
           <path
             d="M 23.5 32.5 L 26.5 32.5 L 26.5 35.5 C 26.5 36.5, 23.5 36.5, 23.5 35.5 Z"
             fill={pressedDDown ? 'var(--primary)' : '#27272a'}
@@ -285,7 +334,7 @@ export function Gamepad({ onButtonPress, mappings = [] }: GamepadProps) {
         </g>
 
         {/* D-Pad Left */}
-        <g className="cursor-pointer" onClick={() => onButtonPress('D-Pad Left')}>
+        <g className="cursor-pointer" onClick={() => handleControlClick(15, 'D-Pad Left')}>
           <path
             d="M 23.5 29.5 L 23.5 32.5 L 20.5 32.5 C 19.5 32.5, 19.5 29.5, 20.5 29.5 Z"
             fill={pressedDLeft ? 'var(--primary)' : '#27272a'}
@@ -298,7 +347,7 @@ export function Gamepad({ onButtonPress, mappings = [] }: GamepadProps) {
         </g>
 
         {/* D-Pad Right */}
-        <g className="cursor-pointer" onClick={() => onButtonPress('D-Pad Right')}>
+        <g className="cursor-pointer" onClick={() => handleControlClick(16, 'D-Pad Right')}>
           <path
             d="M 26.5 29.5 L 26.5 32.5 L 29.5 32.5 C 30.5 32.5, 30.5 29.5, 29.5 29.5 Z"
             fill={pressedDRight ? 'var(--primary)' : '#27272a'}
@@ -311,7 +360,7 @@ export function Gamepad({ onButtonPress, mappings = [] }: GamepadProps) {
         </g>
 
         {/* Left Thumbstick (LS) */}
-        <g className="cursor-pointer" onClick={() => onButtonPress('Left Stick')}>
+        <g className="cursor-pointer" onClick={() => handleControlClick(11, 'Left Stick')}>
           {/* Base / Ring */}
           <circle
             cx="36"
@@ -347,7 +396,7 @@ export function Gamepad({ onButtonPress, mappings = [] }: GamepadProps) {
         </g>
 
         {/* Right Thumbstick (RS) */}
-        <g className="cursor-pointer" onClick={() => onButtonPress('Right Stick')}>
+        <g className="cursor-pointer" onClick={() => handleControlClick(12, 'Right Stick')}>
           {/* Base / Ring */}
           <circle
             cx="64"
@@ -384,7 +433,7 @@ export function Gamepad({ onButtonPress, mappings = [] }: GamepadProps) {
 
         {/* Face Buttons Cluster (Y, X, B, A) */}
         {/* Y Button (North) */}
-        <g className="cursor-pointer" onClick={() => onButtonPress('Y Button')}>
+        <g className="cursor-pointer" onClick={() => handleControlClick(3, 'Y Button')}>
           <circle
             cx="75"
             cy="26"
@@ -410,7 +459,7 @@ export function Gamepad({ onButtonPress, mappings = [] }: GamepadProps) {
         </g>
 
         {/* X Button (West) */}
-        <g className="cursor-pointer" onClick={() => onButtonPress('X Button')}>
+        <g className="cursor-pointer" onClick={() => handleControlClick(2, 'X Button')}>
           <circle
             cx="70"
             cy="31"
@@ -436,7 +485,7 @@ export function Gamepad({ onButtonPress, mappings = [] }: GamepadProps) {
         </g>
 
         {/* B Button (East) */}
-        <g className="cursor-pointer" onClick={() => onButtonPress('B Button')}>
+        <g className="cursor-pointer" onClick={() => handleControlClick(1, 'B Button')}>
           <circle
             cx="80"
             cy="31"
@@ -462,7 +511,7 @@ export function Gamepad({ onButtonPress, mappings = [] }: GamepadProps) {
         </g>
 
         {/* A Button (South) */}
-        <g className="cursor-pointer" onClick={() => onButtonPress('A Button')}>
+        <g className="cursor-pointer" onClick={() => handleControlClick(0, 'A Button')}>
           <circle
             cx="75"
             cy="36"

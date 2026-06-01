@@ -38,6 +38,8 @@ interface SettingsState {
   setTheme: (theme: ThemeType) => Promise<void>;
   setActiveProfile: (name: string) => Promise<void>;
   saveProfile: (profile: Profile) => Promise<void>;
+  createProfile: (name: string) => Promise<void>;
+  renameProfile: (oldName: string, newName: string) => Promise<void>;
   deleteProfile: (name: string) => Promise<void>;
   duplicateProfile: (name: string, newName: string) => Promise<void>;
 }
@@ -53,6 +55,8 @@ const parseNum = (value: string | undefined, fallback: number) => {
   return Number.isFinite(n) ? n : fallback;
 };
 
+const fetchProfiles = async () => invoke<Profile[]>('get_profiles');
+
 export const useSettingsStore = create<SettingsState>()((set, get) => ({
   ready: false,
   runOnBoot: false,
@@ -66,7 +70,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   hydrate: async () => {
     const [settings, profiles] = await Promise.all([
       invoke<SettingsPayload>('get_settings'),
-      invoke<Profile[]>('get_profiles')
+      fetchProfiles()
     ]);
 
     const values = settings.values ?? {};
@@ -118,15 +122,33 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
 
   saveProfile: async (profile) => {
     await invoke('save_profile', { profile });
-    const profiles = await invoke<Profile[]>('get_profiles');
+    const profiles = await fetchProfiles();
     set({ profiles });
+  },
+
+  createProfile: async (name) => {
+    await invoke('create_profile', { name });
+    const profiles = await fetchProfiles();
+    set({ profiles, activeProfile: name });
+    await invoke('set_active_profile', { name });
+  },
+
+  renameProfile: async (oldName, newName) => {
+    await invoke('rename_profile', { oldName, newName });
+    const profiles = await fetchProfiles();
+    const state = get();
+    const activeProfile = state.activeProfile === oldName ? newName : state.activeProfile;
+    set({ profiles, activeProfile });
+    if (state.activeProfile === oldName) {
+      await invoke('set_active_profile', { name: newName });
+    }
   },
 
   deleteProfile: async (name) => {
     await invoke('delete_profile', { name });
-    const profiles = await invoke<Profile[]>('get_profiles');
+    const profiles = await fetchProfiles();
     const activeProfile = get().activeProfile;
-    const hasActive = profiles.some((p) => p.name === activeProfile);
+    const hasActive = profiles.some((profile) => profile.name === activeProfile);
 
     set({ profiles });
     if (!hasActive && profiles[0]) {
@@ -136,7 +158,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
 
   duplicateProfile: async (name, newName) => {
     await invoke('duplicate_profile', { name, newName });
-    const profiles = await invoke<Profile[]>('get_profiles');
+    const profiles = await fetchProfiles();
     set({ profiles });
   }
 }));
