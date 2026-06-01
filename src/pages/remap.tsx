@@ -190,7 +190,8 @@ export function Remap() {
     setIsLoadingProcesses(true);
     try {
       const list = await invoke<ActiveProcess[]>('get_active_processes', {
-        query: query || null
+        query: query || null,
+        limit: 200
       });
       setProcesses(list);
     } catch (error) {
@@ -442,6 +443,11 @@ export function Remap() {
     await renameProfile(active.name, value);
     setIsRenaming(false);
     setRenameValue('');
+  };
+
+  const getProcessBadge = (exeName: string) => {
+    const clean = exeName.replace(/\.exe$/i, '').trim();
+    return clean ? clean[0].toUpperCase() : '?';
   };
 
   return (
@@ -1029,9 +1035,9 @@ export function Remap() {
                     key={`${proc.exe_name}-${proc.pid}`}
                     className="flex items-center justify-between rounded-xl border border-border-main/40 hover:border-border-hover px-4 py-2.5 bg-zinc-950/20 hover:bg-zinc-950/40 transition duration-150"
                   >
-                    <div className="min-w-0 flex items-center gap-3">
-                      <div className="p-1.5 rounded-lg bg-zinc-900 border border-border-main/60">
-                        <Activity className="w-3.5 h-3.5 text-zinc-400" />
+                      <div className="min-w-0 flex items-center gap-3">
+                      <div className="w-7 h-7 rounded-lg bg-zinc-900 border border-border-main/60 flex items-center justify-center text-[10px] font-bold text-zinc-200">
+                        {getProcessBadge(proc.exe_name)}
                       </div>
                       <div className="min-w-0">
                         <p className="text-xs font-bold text-zinc-200 truncate">

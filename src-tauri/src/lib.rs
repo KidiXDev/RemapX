@@ -845,8 +845,9 @@ fn collect_processes() -> Result<Vec<ActiveProcess>, String> {
 }
 
 #[tauri::command]
-fn get_active_processes(query: Option<String>) -> Result<Vec<ActiveProcess>, String> {
+fn get_active_processes(query: Option<String>, limit: Option<usize>) -> Result<Vec<ActiveProcess>, String> {
     let normalized = query.unwrap_or_default().trim().to_ascii_lowercase();
+    let limit = limit.unwrap_or(150).clamp(1, 500);
 
     let mut processes = collect_processes()?;
     if !normalized.is_empty() {
@@ -856,6 +857,9 @@ fn get_active_processes(query: Option<String>) -> Result<Vec<ActiveProcess>, Str
     processes.sort_by(|a, b| a.exe_name.cmp(&b.exe_name));
     let mut seen = HashSet::new();
     processes.retain(|p| seen.insert(p.exe_name.to_ascii_lowercase()));
+    if processes.len() > limit {
+        processes.truncate(limit);
+    }
 
     Ok(processes)
 }
