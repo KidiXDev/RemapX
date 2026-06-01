@@ -1,5 +1,6 @@
 import { Button } from '@/components/common/button';
 import { Card } from '@/components/common/card';
+import { useConfirm } from '@/components/common/confirmation-provider';
 import { Dialog } from '@/components/common/dialog';
 import { Select } from '@/components/common/select';
 import { Slider } from '@/components/common/slider';
@@ -84,12 +85,27 @@ export function Remap() {
     duplicateProfile
   } = useSettingsStore();
 
+  const confirm = useConfirm();
+
   const active = useMemo(
     () =>
       profiles.find((profile) => profile.name === activeProfile) ??
       EMPTY_PROFILE,
     [profiles, activeProfile]
   );
+
+  const handleDeleteProfile = async () => {
+    const confirmed = await confirm({
+      title: 'Delete Profile',
+      description: `Are you sure you want to delete the profile "${active.name}"? This will permanently remove all configured key bindings.`,
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      variant: 'destructive'
+    });
+    if (confirmed) {
+      deleteProfile(active.name);
+    }
+  };
 
   const [activeTab, setActiveTab] = useState<TabType>('bindings');
   const [logs, setLogs] = useState<string[]>([]);
@@ -125,10 +141,6 @@ export function Remap() {
         .filter(Boolean),
     [active.target_exe]
   );
-
-  const targetDisplay = targetList.length
-    ? targetList.join(', ')
-    : 'Global (no target executable set)';
 
   const filteredMappings = useMemo(() => {
     if (!bindingsQuery.trim()) return active.mappings;
@@ -542,7 +554,7 @@ export function Remap() {
                   </div>
                 ) : (
                   /* Terminal interface for logs */
-                  <div className="flex flex-col h-full rounded-xl border border-border-main/70 bg-zinc-950/70 overflow-hidden font-mono text-[11px] h-[510px]">
+                  <div className="flex flex-col rounded-xl border border-border-main/70 bg-zinc-950/70 overflow-hidden font-mono text-[11px] h-[510px]">
                     {/* Terminal Header */}
                     <div className="flex items-center justify-between bg-zinc-900/60 border-b border-border-main/70 px-4 py-2 shrink-0">
                       <div className="flex items-center gap-1.5">
@@ -646,7 +658,7 @@ export function Remap() {
                     {/* Delete Action */}
                     <Button
                       variant="destructive"
-                      onClick={() => deleteProfile(active.name)}
+                      onClick={handleDeleteProfile}
                       disabled={profiles.length <= 1}
                       title="Delete Profile"
                       className="h-9 w-9 p-0 flex items-center justify-center rounded-xl"
@@ -860,7 +872,7 @@ export function Remap() {
                       className="flex items-center justify-between text-xs text-zinc-300 rounded-xl border border-border-main/40 px-3 py-2 bg-zinc-950/20"
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="relative flex-shrink-0">
+                        <div className="relative shrink-0">
                           <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
