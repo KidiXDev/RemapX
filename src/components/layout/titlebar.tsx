@@ -1,11 +1,6 @@
 import { Button } from '@/components/common/button';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import {
-  ArrowLeft,
-  Gamepad2,
-  Settings as SettingsIcon,
-  X
-} from 'lucide-react';
+import { ArrowLeft, Gamepad2, Settings as SettingsIcon, X } from 'lucide-react';
 import { type MouseEvent } from 'react';
 import { Link } from 'react-router';
 
