@@ -191,6 +191,92 @@ fn get_active_profile() -> Option<Profile> {
         .and_then(|profiles| profiles.into_iter().find(|p| p.name == active_profile))
 }
 
+fn trigger_mapping_action_with_profile(button_id: i64, app: &AppHandle, profile: &Profile) {
+    if is_own_window_focused() {
+        emit_engine_log(
+            app,
+            format!("Remap blocked in-app focus: button={button_id}"),
+            true,
+        );
+        return;
+    }
+
+    if !allow_by_debounce(button_id, profile.debounce_ms) {
+        emit_engine_log(
+            app,
+            format!(
+                "Remap blocked by debounce: button={button_id}, debounce_ms={}",
+                profile.debounce_ms
+            ),
+            true,
+        );
+        return;
+    }
+
+    emit_engine_log(
+        app,
+        format!(
+            "Remap lookup: button={button_id}, active_profile={}",
+            profile.name
+        ),
+        true,
+    );
+
+    let Some(mapping) = profile
+        .mappings
+        .iter()
+        .find(|m| m.button_id == button_id)
+        .cloned()
+    else {
+        emit_engine_log(
+            app,
+            format!("Remap skipped: no mapping for button={button_id}"),
+            true,
+        );
+        return;
+    };
+
+    emit_engine_log(
+        app,
+        format!(
+            "Remap matched: button={} -> key='{}' type={}",
+            button_id, mapping.key_str, mapping.mapping_type
+        ),
+        true,
+    );
+
+    if !mapping.mapping_type.eq_ignore_ascii_case("keyboard") {
+        emit_engine_log(
+            app,
+            format!(
+                "Remap skipped: mapping_type '{}' not implemented",
+                mapping.mapping_type
+            ),
+            false,
+        );
+        return;
+    }
+
+    if let Some(vk) = input_sim::key_to_vk(&mapping.key_str) {
+        emit_engine_log(
+            app,
+            format!("Injecting key: '{}' (vk={vk})", mapping.key_str),
+            true,
+        );
+        if let Err(err) = input_sim::tap_key(vk) {
+            emit_engine_log(app, format!("Injection failed: {err}"), false);
+        } else if is_developer_mode_enabled() {
+            emit_engine_log(app, "Injection success", true);
+        }
+    } else {
+        emit_engine_log(
+            app,
+            format!("Remap skipped: unsupported key '{}'", mapping.key_str),
+            false,
+        );
+    }
+}
+
 fn allow_by_debounce(button_id: i64, debounce_ms: i64) -> bool {
     let debounce_ms = debounce_ms.max(0) as u64;
     if debounce_ms == 0 {
@@ -262,8 +348,15 @@ fn start_engine(app: AppHandle, engine: State<'_, EngineState>) -> Result<(), St
         let mut xinput_prev: [[bool; 17]; 4] = [[false; 17]; 4];
         #[cfg(target_os = "windows")]
         let mut xinput_axes_prev: [[f32; 4]; 4] = [[0.0; 4]; 4];
+        let mut cached_profile = get_active_profile();
+        let mut last_profile_refresh = Instant::now();
 
         while running.load(Ordering::Relaxed) {
+            if last_profile_refresh.elapsed() >= Duration::from_millis(250) {
+                cached_profile = get_active_profile();
+                last_profile_refresh = Instant::now();
+            }
+
             while let Some(ev) = gilrs.next_event() {
                 match ev.event {
                     EventType::ButtonPressed(btn, _) => {
@@ -275,7 +368,11 @@ fn start_engine(app: AppHandle, engine: State<'_, EngineState>) -> Result<(), St
                                 pressed: true,
                             },
                         );
-                        trigger_mapping_action(button_id, &app_handle);
+                        if let Some(profile) = cached_profile.as_ref() {
+                            trigger_mapping_action_with_profile(button_id, &app_handle, profile);
+                        } else {
+                            trigger_mapping_action(button_id, &app_handle);
+                        }
                     }
                     EventType::ButtonReleased(btn, _) => {
                         let button_id = button_to_id(btn);
@@ -288,7 +385,8 @@ fn start_engine(app: AppHandle, engine: State<'_, EngineState>) -> Result<(), St
                         );
                     }
                     EventType::ButtonChanged(btn, value, _) => {
-                        let profile_deadzone = get_active_profile()
+                        let profile_deadzone = cached_profile
+                            .as_ref()
                             .map(|p| p.axis_deadzone)
                             .unwrap_or(0.0)
                             .clamp(0.0, 1.0) as f32;
@@ -308,7 +406,11 @@ fn start_engine(app: AppHandle, engine: State<'_, EngineState>) -> Result<(), St
                                     pressed: true,
                                 },
                             );
-                            trigger_mapping_action(button_id, &app_handle);
+                            if let Some(profile) = cached_profile.as_ref() {
+                                trigger_mapping_action_with_profile(button_id, &app_handle, profile);
+                            } else {
+                                trigger_mapping_action(button_id, &app_handle);
+                            }
                         } else if is_released && was_pressed {
                             changed_button_state.insert(btn, false);
                             let button_id = button_to_id(btn);
@@ -369,7 +471,11 @@ fn start_engine(app: AppHandle, engine: State<'_, EngineState>) -> Result<(), St
                                 format!("Polled press detected: pad={:?}, button={}", id, button_id),
                                 true,
                             );
-                            trigger_mapping_action(button_id, &app_handle);
+                            if let Some(profile) = cached_profile.as_ref() {
+                                trigger_mapping_action_with_profile(button_id, &app_handle, profile);
+                            } else {
+                                trigger_mapping_action(button_id, &app_handle);
+                            }
                         }
                     }
                 }
@@ -385,7 +491,8 @@ fn start_engine(app: AppHandle, engine: State<'_, EngineState>) -> Result<(), St
                     }
 
                     let buttons = state.Gamepad.wButtons;
-                    let profile_deadzone = get_active_profile()
+                    let profile_deadzone = cached_profile
+                        .as_ref()
                         .map(|p| p.axis_deadzone)
                         .unwrap_or(0.0)
                         .clamp(0.0, 1.0);
@@ -425,7 +532,11 @@ fn start_engine(app: AppHandle, engine: State<'_, EngineState>) -> Result<(), St
                             },
                         );
                         if now[button_id] {
-                            trigger_mapping_action(button_id as i64, &app_handle);
+                            if let Some(profile) = cached_profile.as_ref() {
+                                trigger_mapping_action_with_profile(button_id as i64, &app_handle, profile);
+                            } else {
+                                trigger_mapping_action(button_id as i64, &app_handle);
+                            }
                         }
                     }
 
@@ -763,8 +874,18 @@ pub fn run() {
             if let Some(main) = app.get_webview_window("main") {
                 let _ = restore_window_state(&main);
                 let main_for_events = main.clone();
+                let last_save_at = Arc::new(Mutex::new(Instant::now()));
+                let last_save_at_for_events = Arc::clone(&last_save_at);
                 main.on_window_event(move |event| match event {
-                    WindowEvent::Moved(_) | WindowEvent::Resized(_) | WindowEvent::CloseRequested { .. } => {
+                    WindowEvent::Moved(_) | WindowEvent::Resized(_) => {
+                        if let Ok(mut last) = last_save_at_for_events.lock() {
+                            if last.elapsed() >= Duration::from_millis(500) {
+                                let _ = save_window_state(&main_for_events);
+                                *last = Instant::now();
+                            }
+                        }
+                    }
+                    WindowEvent::CloseRequested { .. } => {
                         let _ = save_window_state(&main_for_events);
                     }
                     _ => {}
