@@ -26,7 +26,7 @@ import {
   X,
   Zap
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useDebounce } from 'use-debounce';
 
 interface EngineLogPayload {
@@ -47,8 +47,8 @@ type TabType = 'bindings' | 'live';
 
 const EMPTY_PROFILE: Profile = {
   name: 'Default',
-  debounce_ms: 10,
-  axis_deadzone: 0.12,
+  debounce_ms: 8,
+  axis_deadzone: 0.0,
   target_exe: '',
   mappings: []
 };
@@ -116,6 +116,8 @@ export function Remap() {
   >([]);
   const [isLoadingGamepads, setIsLoadingGamepads] = useState(false);
   const [showGamepadLoading, setShowGamepadLoading] = useState(false);
+  const gamepadRefreshInFlightRef = useRef(false);
+  const gamepadSignatureRef = useRef('');
 
   const [recordingTarget, setRecordingTarget] = useState<{
     buttonId: number;
@@ -155,16 +157,30 @@ export function Remap() {
     });
   }, [active.mappings, bindingsQuery]);
 
-  const loadConnectedGamepads = async () => {
-    setIsLoadingGamepads(true);
+  const loadConnectedGamepads = async (opts?: { silent?: boolean }) => {
+    if (gamepadRefreshInFlightRef.current) return;
+    gamepadRefreshInFlightRef.current = true;
+    const silent = opts?.silent === true;
+    if (!silent) setIsLoadingGamepads(true);
     try {
       const pads = await invoke<ConnectedGamepad[]>('get_connected_gamepads');
-      setConnectedGamepads(pads);
+      const signature = pads
+        .map((pad) => `${pad.id}:${pad.name}`)
+        .sort()
+        .join('|');
+      if (signature !== gamepadSignatureRef.current) {
+        gamepadSignatureRef.current = signature;
+        setConnectedGamepads(pads);
+      }
     } catch (error) {
       console.error('Failed to load connected gamepads', error);
-      setConnectedGamepads([]);
+      if (gamepadSignatureRef.current !== '') {
+        gamepadSignatureRef.current = '';
+        setConnectedGamepads([]);
+      }
     } finally {
-      setIsLoadingGamepads(false);
+      if (!silent) setIsLoadingGamepads(false);
+      gamepadRefreshInFlightRef.current = false;
     }
   };
 
@@ -184,7 +200,14 @@ export function Remap() {
   };
 
   useEffect(() => {
-    loadConnectedGamepads();
+    void loadConnectedGamepads();
+  }, []);
+
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      void loadConnectedGamepads({ silent: true });
+    }, 1500);
+    return () => window.clearInterval(id);
   }, []);
 
   useEffect(() => {
@@ -220,14 +243,37 @@ export function Remap() {
   }, [isLoadingProcesses]);
 
   useEffect(() => {
-    invoke('start_engine')
-      .then(() => setEngineRunning(true))
-      .catch((err) => console.error('Failed to auto-start engine', err));
+    const initEngine = async () => {
+      try {
+        const pads = await invoke<ConnectedGamepad[]>('get_connected_gamepads');
+        setConnectedGamepads(pads);
+        if (pads.length === 0) return;
+        await invoke('start_engine');
+        setEngineRunning(true);
+      } catch (err) {
+        console.error('Failed to auto-start engine', err);
+      }
+    };
+
+    void initEngine();
 
     return () => {
       invoke('stop_engine').catch(() => {});
     };
   }, []);
+
+  useEffect(() => {
+    if (connectedGamepads.length > 0 || !engineRunning) return;
+
+    invoke('stop_engine')
+      .then(() => setEngineRunning(false))
+      .catch((err) =>
+        console.error(
+          'Failed to auto-stop engine when no gamepad is connected',
+          err
+        )
+      );
+  }, [connectedGamepads, engineRunning]);
 
   useEffect(() => {
     if (!recordingTarget) return;
@@ -348,6 +394,7 @@ export function Remap() {
 
   const onToggleEngine = async () => {
     if (!engineRunning) {
+      if (connectedGamepads.length === 0) return;
       await invoke('start_engine');
       setEngineRunning(true);
       return;
@@ -408,6 +455,7 @@ export function Remap() {
                 <Button
                   variant="secondary"
                   onClick={onToggleEngine}
+                  disabled={!engineRunning && connectedGamepads.length === 0}
                   title={
                     engineRunning
                       ? 'Stop Input Remapping Engine'
@@ -796,7 +844,7 @@ export function Remap() {
 
                 <Slider
                   label="Joystick Deadzone"
-                  value={Math.round((active.axis_deadzone ?? 0.12) * 100)}
+                  value={Math.round((active.axis_deadzone ?? 0.0) * 100)}
                   onChange={async (val) => {
                     await saveProfile({ ...active, axis_deadzone: val / 100 });
                   }}
@@ -871,7 +919,9 @@ export function Remap() {
                   </span>
                 </div>
                 <button
-                  onClick={loadConnectedGamepads}
+                  onClick={() => {
+                    void loadConnectedGamepads();
+                  }}
                   disabled={isLoadingGamepads}
                   className="text-zinc-500 hover:text-primary-text transition flex items-center gap-1 text-xs font-bold disabled:opacity-50 cursor-pointer"
                 >

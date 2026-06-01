@@ -76,26 +76,7 @@ fn seed_if_needed(conn: &Connection) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     if profile_count == 0 {
-        conn.execute(
-            "INSERT INTO profiles(name, debounce_ms, axis_deadzone, target_exe) VALUES (?1, ?2, ?3, ?4)",
-            params!["Default", 10_i64, 0.12_f64, ""],
-        )
-        .map_err(|e| e.to_string())?;
-
-        let defaults = [
-            (0_i64, "SPACE", "Keyboard"),
-            (1_i64, "R", "Keyboard"),
-            (2_i64, "MOUSELEFT", "Mouse"),
-            (3_i64, "MOUSERIGHT", "Mouse"),
-        ];
-
-        for (button_id, key_str, mapping_type) in defaults {
-            conn.execute(
-                "INSERT INTO mappings(profile_name, button_id, key_str, mapping_type) VALUES (?1, ?2, ?3, ?4)",
-                params!["Default", button_id, key_str, mapping_type],
-            )
-            .map_err(|e| e.to_string())?;
-        }
+        ensure_default_profile(conn)?;
     }
 
     let settings = [
@@ -115,6 +96,15 @@ fn seed_if_needed(conn: &Connection) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
     }
 
+    Ok(())
+}
+
+fn ensure_default_profile(conn: &Connection) -> Result<(), String> {
+    conn.execute(
+        "INSERT OR IGNORE INTO profiles(name, debounce_ms, axis_deadzone, target_exe) VALUES (?1, ?2, ?3, ?4)",
+        params!["Default", 8_i64, 0.0_f64, ""],
+    )
+    .map_err(|e| e.to_string())?;
     Ok(())
 }
 
@@ -241,6 +231,14 @@ pub fn delete_profile(name: &str) -> Result<(), String> {
     let conn = open_connection()?;
     conn.execute("DELETE FROM profiles WHERE name=?1", params![name])
         .map_err(|e| e.to_string())?;
+
+    let count: i64 = conn
+        .query_row("SELECT COUNT(*) FROM profiles", [], |row| row.get(0))
+        .map_err(|e| e.to_string())?;
+    if count == 0 {
+        ensure_default_profile(&conn)?;
+        save_setting("activeProfile", "Default")?;
+    }
     Ok(())
 }
 
@@ -258,8 +256,8 @@ pub fn create_profile(name: &str) -> Result<Profile, String> {
 
     let profile = Profile {
         name: name.trim().to_string(),
-        debounce_ms: 10,
-        axis_deadzone: 0.12,
+        debounce_ms: 8,
+        axis_deadzone: 0.0,
         target_exe: String::new(),
         mappings: vec![],
     };

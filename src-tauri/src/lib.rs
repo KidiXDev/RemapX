@@ -218,7 +218,7 @@ fn start_engine(app: AppHandle, engine: State<'_, EngineState>) -> Result<(), St
                     EventType::ButtonChanged(btn, value, _) => {
                         let profile_deadzone = get_active_profile()
                             .map(|p| p.axis_deadzone)
-                            .unwrap_or(0.12)
+                            .unwrap_or(0.0)
                             .clamp(0.0, 1.0) as f32;
                         let press_threshold = profile_deadzone.max(0.5);
                         let release_threshold = (press_threshold - 0.2).max(0.2);
@@ -315,7 +315,7 @@ fn start_engine(app: AppHandle, engine: State<'_, EngineState>) -> Result<(), St
                     let buttons = state.Gamepad.wButtons;
                     let profile_deadzone = get_active_profile()
                         .map(|p| p.axis_deadzone)
-                        .unwrap_or(0.12)
+                        .unwrap_or(0.0)
                         .clamp(0.0, 1.0);
                     let trigger_threshold = ((profile_deadzone * 255.0).round() as u8).max(30);
                     let left_trigger = state.Gamepad.bLeftTrigger >= trigger_threshold;
