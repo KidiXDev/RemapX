@@ -112,7 +112,7 @@ export function Gamepad({
   };
 
   return (
-    <div className="relative w-full max-w-[340px] aspect-5/3 my-4 group select-none">
+    <div className="relative w-full max-w-[480px] aspect-5/3 my-4 group select-none">
       <svg
         className="w-full h-full text-zinc-700 transition-colors duration-300"
         viewBox="0 0 100 60"

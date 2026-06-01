@@ -746,7 +746,7 @@ export function Remap() {
               {/* Profile Slider Settings */}
               <div className="border-t border-border-main/30 pt-4 space-y-4">
                 <Slider
-                  label="Button Debounce Filter"
+                  label="Debounce"
                   value={active.debounce_ms}
                   onChange={async (val) => {
                     await saveProfile({ ...active, debounce_ms: val });

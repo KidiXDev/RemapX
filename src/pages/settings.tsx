@@ -1,7 +1,6 @@
 import { ContentLayout } from '@/components/layout/content-layout';
 import { ToggleSwitch } from '@/components/common/button';
 import { Card } from '@/components/common/card';
-import { Slider } from '@/components/common/slider';
 import { ThemeType, useSettingsStore } from '@/hooks/use-settings-store';
 
 export function Settings() {
@@ -10,22 +9,20 @@ export function Settings() {
     startMinimized,
     minimizeToTray,
     developerMode,
-    debounce,
     theme,
     setRunOnBoot,
     setStartMinimized,
     setMinimizeToTray,
     setDeveloperMode,
-    setDebounce,
     setTheme
   } = useSettingsStore();
 
   return (
     <ContentLayout
       title="System Settings"
-      description="Configure application driver defaults, startup behavior, and visual preferences."
+      description="Configure startup behavior and visual preferences."
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="w-full flex flex-col gap-6">
         {/* Startup Options */}
         <Card title="Startup & Window Behavior">
           <div className="space-y-4">
@@ -91,24 +88,8 @@ export function Settings() {
           </div>
         </Card>
 
-        {/* Gamepad Parameters */}
-        <Card title="Gamepad Driver Configuration">
-          <div className="space-y-5">
-            {/* Button Debounce Slider */}
-            <Slider
-              label="Button Debounce Time"
-              value={debounce}
-              onChange={setDebounce}
-              min={0}
-              max={50}
-              suffix="ms"
-              description="Filters physical switch chatter on button presses. Prevents duplicate or noisy inputs by specifying a minimum latency threshold between activations."
-            />
-          </div>
-        </Card>
-
         {/* Visual Engine Preferences */}
-        <Card title="Theme & Interface Customization" className="md:col-span-2">
+        <Card title="Theme & Interface Customization">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[
               {

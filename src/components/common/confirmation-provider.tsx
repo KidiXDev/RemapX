@@ -75,7 +75,7 @@ export const ConfirmationProvider: React.FC<{ children: React.ReactNode }> = ({
         <div className="space-y-6">
           <div className="flex gap-4 items-start">
             <div
-              className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${getIconContainerClass()}`}
+              className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${getIconContainerClass()}`}
             >
               {getIcon()}
             </div>

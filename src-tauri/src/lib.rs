@@ -12,12 +12,16 @@ use std::thread;
 use std::time::Duration;
 use tauri::{AppHandle, Emitter, State};
 #[cfg(target_os = "windows")]
+use windows_sys::Win32::System::Threading::GetCurrentProcessId;
+#[cfg(target_os = "windows")]
 use windows_sys::Win32::UI::Input::XboxController::{
     XInputGetState, XINPUT_GAMEPAD_A, XINPUT_GAMEPAD_B, XINPUT_GAMEPAD_BACK, XINPUT_GAMEPAD_DPAD_DOWN,
     XINPUT_GAMEPAD_DPAD_LEFT, XINPUT_GAMEPAD_DPAD_RIGHT, XINPUT_GAMEPAD_DPAD_UP, XINPUT_GAMEPAD_LEFT_SHOULDER,
     XINPUT_GAMEPAD_LEFT_THUMB, XINPUT_GAMEPAD_RIGHT_SHOULDER, XINPUT_GAMEPAD_RIGHT_THUMB, XINPUT_GAMEPAD_START,
     XINPUT_GAMEPAD_X, XINPUT_GAMEPAD_Y, XINPUT_STATE,
 };
+#[cfg(target_os = "windows")]
+use windows_sys::Win32::UI::WindowsAndMessaging::{GetForegroundWindow, GetWindowThreadProcessId};
 
 #[cfg(target_os = "windows")]
 use windows_sys::Win32::Foundation::{CloseHandle, HWND, INVALID_HANDLE_VALUE, LPARAM};
@@ -27,7 +31,7 @@ use windows_sys::Win32::System::Diagnostics::ToolHelp::{
 };
 #[cfg(target_os = "windows")]
 use windows_sys::Win32::UI::WindowsAndMessaging::{
-    EnumWindows, GetWindowTextLengthW, GetWindowThreadProcessId, IsWindowVisible,
+    EnumWindows, GetWindowTextLengthW, IsWindowVisible,
 };
 
 struct EngineState {
@@ -63,6 +67,24 @@ fn emit_engine_log(app: &AppHandle, message: impl Into<String>, verbose: bool) {
             message: message.into(),
         },
     );
+}
+
+#[cfg(target_os = "windows")]
+fn is_own_window_focused() -> bool {
+    unsafe {
+        let hwnd = GetForegroundWindow();
+        if hwnd.is_null() {
+            return false;
+        }
+        let mut pid = 0_u32;
+        GetWindowThreadProcessId(hwnd, &mut pid);
+        pid != 0 && pid == GetCurrentProcessId()
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+fn is_own_window_focused() -> bool {
+    false
 }
 
 #[derive(Clone, Serialize)]
@@ -316,6 +338,15 @@ fn button_to_id(button: Button) -> i64 {
 }
 
 fn trigger_mapping_action(button_id: i64, app: &AppHandle) {
+    if is_own_window_focused() {
+        emit_engine_log(
+            app,
+            format!("Remap blocked in-app focus: button={button_id}"),
+            true,
+        );
+        return;
+    }
+
     let active_profile = db::get_settings()
         .ok()
         .and_then(|s| s.values.get("activeProfile").cloned())
