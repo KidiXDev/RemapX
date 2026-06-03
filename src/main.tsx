@@ -1,8 +1,14 @@
+import '@/i18n';
+import App from '@/routes';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './global.css';
-import '@/i18n';
-import App from '@/routes';
+
+if (import.meta.env.PROD) {
+  window.addEventListener('contextmenu', (event) => {
+    event.preventDefault();
+  });
+}
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
