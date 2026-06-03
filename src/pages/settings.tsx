@@ -1,8 +1,8 @@
 import { Button, ToggleSwitch } from '@/components/common/button';
 import { Card } from '@/components/common/card';
 import { Select } from '@/components/common/select';
-import { useConfirm } from '@/components/common/confirmation-provider';
 import { ContentLayout } from '@/components/layout/content-layout';
+import { useConfirm } from '@/components/providers/confirmation-provider';
 import {
   LocaleType,
   ThemeType,
@@ -50,10 +50,10 @@ export function Settings() {
 
       const isNewer = (curr: string, lat: string) => {
         if (curr === 'dev') return true; // Allow local testing
-        
+
         const curParts = curr.split('.').map(Number);
         const latParts = lat.split('.').map(Number);
-        
+
         for (let i = 0; i < Math.max(curParts.length, latParts.length); i++) {
           const curVal = curParts[i] || 0;
           const latVal = latParts[i] || 0;
