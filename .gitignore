@@ -30,3 +30,4 @@ target
 *.pdb
 **/mutants.out*/
 rustc-ice-*.txt
+plan.md
