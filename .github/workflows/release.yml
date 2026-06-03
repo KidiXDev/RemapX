@@ -17,12 +17,7 @@ jobs:
             args: "--target x86_64-pc-windows-msvc"
             name: "Windows x64"
             binary_path: "src-tauri/target/x86_64-pc-windows-msvc/release/remapx.exe"
-            portable_name: "remapx-x86_64-pc-windows-msvc-portable.zip"
-          - target: i686-pc-windows-msvc
-            args: "--target i686-pc-windows-msvc"
-            name: "Windows x86"
-            binary_path: "src-tauri/target/i686-pc-windows-msvc/release/remapx.exe"
-            portable_name: "remapx-i686-pc-windows-msvc-portable.zip"
+            portable_name: "remapx-x86_64-pc-windows-msvc-portable.exe"
 
     runs-on: windows-latest
     steps:
@@ -52,13 +47,13 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: 'RemapX ${{ github.ref_name }}'
           releaseBody: 'Release ${{ github.ref_name }}'
-          releaseDraft: true
+          releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
 
-      - name: Compress portable executable
+      - name: Prepare portable executable
         run: |
-          Compress-Archive -Path ${{ matrix.binary_path }} -DestinationPath src-tauri/target/${{ matrix.target }}/release/${{ matrix.portable_name }}
+          Copy-Item -Path ${{ matrix.binary_path }} -Destination src-tauri/target/${{ matrix.target }}/release/${{ matrix.portable_name }} -Force
 
       - name: Upload portable executable to release
         env:
