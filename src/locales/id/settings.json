@@ -4,19 +4,19 @@
   "startupCardTitle": "Startup & Window Behavior",
   "startWithWindows": {
     "label": "Start with Windows",
-    "description": "Jalankan daemon di system tray saat booting. (Coming Soon)"
+    "description": "Jalankan RemapX otomatis saat Windows menyala. Tidak tersedia untuk build portable."
   },
   "startMinimized": {
     "label": "Start Minimized",
-    "description": "Jangan buka GUI window saat Windows startup. (Coming Soon)"
+    "description": "Biarkan window tetap tersembunyi saat aplikasi dibuka. Memerlukan Minimize ke System Tray."
   },
   "minimizeToTray": {
     "label": "Minimize ke System Tray",
-    "description": "Menutup window akan menyembunyikan aplikasi ke system tray. (Coming Soon)"
+    "description": "Menutup window akan menyembunyikan aplikasi ke tray, bukan keluar."
   },
   "developerMode": {
     "label": "Developer Mode",
-    "description": "Aktifkan log remap dan injeksi detail untuk diagnostics."
+    "description": "Aktifkan log diagnostics detail. Pada build production, F12 akan membuka devtools saat opsi ini aktif."
   },
   "languageCardTitle": "Localization",
   "languageLabel": "Display Language",

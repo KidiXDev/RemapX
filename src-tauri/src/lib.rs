@@ -6,21 +6,25 @@ use db::{Profile, SettingsPayload};
 use gilrs::{Axis, Button, EventType, GamepadId, Gilrs};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
-use std::sync::Mutex;
+use std::process::Command;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Mutex;
 use std::sync::{Arc, OnceLock};
 use std::thread;
 use std::time::{Duration, Instant};
-use tauri::{AppHandle, Emitter, State};
+use tauri::menu::{MenuBuilder, MenuItemBuilder};
+use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::Manager;
+use tauri::{AppHandle, Emitter, State};
 use tauri::{PhysicalPosition, PhysicalSize, Position, Size, WindowEvent};
 #[cfg(target_os = "windows")]
 use windows_sys::Win32::System::Threading::GetCurrentProcessId;
 #[cfg(target_os = "windows")]
 use windows_sys::Win32::UI::Input::XboxController::{
-    XInputGetState, XINPUT_GAMEPAD_A, XINPUT_GAMEPAD_B, XINPUT_GAMEPAD_BACK, XINPUT_GAMEPAD_DPAD_DOWN,
-    XINPUT_GAMEPAD_DPAD_LEFT, XINPUT_GAMEPAD_DPAD_RIGHT, XINPUT_GAMEPAD_DPAD_UP, XINPUT_GAMEPAD_LEFT_SHOULDER,
-    XINPUT_GAMEPAD_LEFT_THUMB, XINPUT_GAMEPAD_RIGHT_SHOULDER, XINPUT_GAMEPAD_RIGHT_THUMB, XINPUT_GAMEPAD_START,
+    XInputGetState, XINPUT_GAMEPAD_A, XINPUT_GAMEPAD_B, XINPUT_GAMEPAD_BACK,
+    XINPUT_GAMEPAD_DPAD_DOWN, XINPUT_GAMEPAD_DPAD_LEFT, XINPUT_GAMEPAD_DPAD_RIGHT,
+    XINPUT_GAMEPAD_DPAD_UP, XINPUT_GAMEPAD_LEFT_SHOULDER, XINPUT_GAMEPAD_LEFT_THUMB,
+    XINPUT_GAMEPAD_RIGHT_SHOULDER, XINPUT_GAMEPAD_RIGHT_THUMB, XINPUT_GAMEPAD_START,
     XINPUT_GAMEPAD_X, XINPUT_GAMEPAD_Y, XINPUT_STATE,
 };
 #[cfg(target_os = "windows")]
@@ -41,6 +45,10 @@ struct EngineState {
     running: Arc<AtomicBool>,
 }
 
+struct AppRuntimeState {
+    skip_initial_show: AtomicBool,
+}
+
 #[derive(Clone, Serialize)]
 struct GamepadButtonState {
     button_id: i64,
@@ -58,12 +66,33 @@ struct EngineLog {
     message: String,
 }
 
-fn is_developer_mode_enabled() -> bool {
+#[derive(Clone, Serialize)]
+struct RuntimeInfo {
+    is_portable: bool,
+}
+
+fn is_setting_enabled(key: &str, default: bool) -> bool {
     db::get_settings()
         .ok()
-        .and_then(|s| s.values.get("developerMode").cloned())
+        .and_then(|s| s.values.get(key).cloned())
         .map(|v| v.eq_ignore_ascii_case("true"))
-        .unwrap_or(false)
+        .unwrap_or(default)
+}
+
+fn is_developer_mode_enabled() -> bool {
+    is_setting_enabled("developerMode", false)
+}
+
+fn should_minimize_to_tray() -> bool {
+    is_setting_enabled("minimizeToTray", true)
+}
+
+fn should_start_hidden_on_launch() -> bool {
+    should_minimize_to_tray() && is_setting_enabled("startMinimized", false)
+}
+
+fn is_portable_build() -> bool {
+    matches!(option_env!("REMAPX_BUILD_FLAVOR"), Some("portable"))
 }
 
 fn emit_engine_log(app: &AppHandle, message: impl Into<String>, verbose: bool) {
@@ -176,6 +205,72 @@ fn restore_window_state(window: &tauri::WebviewWindow) -> Result<(), String> {
     }
 
     Ok(())
+}
+
+#[cfg(target_os = "windows")]
+const RUN_KEY_PATH: &str = r"HKCU\Software\Microsoft\Windows\CurrentVersion\Run";
+#[cfg(target_os = "windows")]
+const RUN_VALUE_NAME: &str = "RemapX";
+
+#[cfg(target_os = "windows")]
+fn current_exe_run_value() -> Result<String, String> {
+    let path = std::env::current_exe().map_err(|e| e.to_string())?;
+    Ok(format!("\"{}\"", path.display()))
+}
+
+#[cfg(target_os = "windows")]
+fn set_windows_run_on_boot(enabled: bool) -> Result<(), String> {
+    if enabled {
+        let value = current_exe_run_value()?;
+        let output = Command::new("reg")
+            .args([
+                "add",
+                RUN_KEY_PATH,
+                "/v",
+                RUN_VALUE_NAME,
+                "/t",
+                "REG_SZ",
+                "/d",
+            ])
+            .arg(value)
+            .arg("/f")
+            .output()
+            .map_err(|e| e.to_string())?;
+        if output.status.success() {
+            return Ok(());
+        }
+
+        let error = String::from_utf8_lossy(&output.stderr).trim().to_string();
+        return Err(if error.is_empty() {
+            "Failed to enable start with Windows".to_string()
+        } else {
+            error
+        });
+    }
+
+    let output = Command::new("reg")
+        .args(["delete", RUN_KEY_PATH, "/v", RUN_VALUE_NAME, "/f"])
+        .output()
+        .map_err(|e| e.to_string())?;
+    if output.status.success() {
+        return Ok(());
+    }
+
+    let stderr = String::from_utf8_lossy(&output.stderr).to_ascii_lowercase();
+    if stderr.contains("unable to find") || stderr.contains("cannot find") {
+        return Ok(());
+    }
+
+    Err(if stderr.trim().is_empty() {
+        "Failed to disable start with Windows".to_string()
+    } else {
+        stderr.trim().to_string()
+    })
+}
+
+#[cfg(not(target_os = "windows"))]
+fn set_windows_run_on_boot(_enabled: bool) -> Result<(), String> {
+    Err("Start with Windows is only supported on Windows".to_string())
 }
 
 static LAST_TRIGGER_TIMES: OnceLock<Mutex<HashMap<i64, Instant>>> = OnceLock::new();
@@ -407,7 +502,11 @@ fn start_engine(app: AppHandle, engine: State<'_, EngineState>) -> Result<(), St
                                 },
                             );
                             if let Some(profile) = cached_profile.as_ref() {
-                                trigger_mapping_action_with_profile(button_id, &app_handle, profile);
+                                trigger_mapping_action_with_profile(
+                                    button_id,
+                                    &app_handle,
+                                    profile,
+                                );
                             } else {
                                 trigger_mapping_action(button_id, &app_handle);
                             }
@@ -468,11 +567,18 @@ fn start_engine(app: AppHandle, engine: State<'_, EngineState>) -> Result<(), St
                         if pressed_now {
                             emit_engine_log(
                                 &app_handle,
-                                format!("Polled press detected: pad={:?}, button={}", id, button_id),
+                                format!(
+                                    "Polled press detected: pad={:?}, button={}",
+                                    id, button_id
+                                ),
                                 true,
                             );
                             if let Some(profile) = cached_profile.as_ref() {
-                                trigger_mapping_action_with_profile(button_id, &app_handle, profile);
+                                trigger_mapping_action_with_profile(
+                                    button_id,
+                                    &app_handle,
+                                    profile,
+                                );
                             } else {
                                 trigger_mapping_action(button_id, &app_handle);
                             }
@@ -533,7 +639,11 @@ fn start_engine(app: AppHandle, engine: State<'_, EngineState>) -> Result<(), St
                         );
                         if now[button_id] {
                             if let Some(profile) = cached_profile.as_ref() {
-                                trigger_mapping_action_with_profile(button_id as i64, &app_handle, profile);
+                                trigger_mapping_action_with_profile(
+                                    button_id as i64,
+                                    &app_handle,
+                                    profile,
+                                );
                             } else {
                                 trigger_mapping_action(button_id as i64, &app_handle);
                             }
@@ -590,12 +700,44 @@ fn trigger_button_action(app: AppHandle, button_id: i64) -> Result<(), String> {
 
 #[tauri::command]
 fn show_main_window(app: AppHandle) -> Result<(), String> {
+    if let Some(state) = app.try_state::<AppRuntimeState>() {
+        if state.skip_initial_show.swap(false, Ordering::SeqCst) {
+            return Ok(());
+        }
+    }
     let window = app
         .get_webview_window("main")
         .ok_or_else(|| "Main window not found".to_string())?;
+    let _ = window.unminimize();
     window.show().map_err(|e| e.to_string())?;
     let _ = window.set_focus();
     Ok(())
+}
+
+#[tauri::command]
+fn open_main_devtools(app: AppHandle) -> Result<(), String> {
+    let window = app
+        .get_webview_window("main")
+        .ok_or_else(|| "Main window not found".to_string())?;
+    window.open_devtools();
+    Ok(())
+}
+
+#[tauri::command]
+fn get_runtime_info() -> RuntimeInfo {
+    RuntimeInfo {
+        is_portable: is_portable_build(),
+    }
+}
+
+#[tauri::command]
+fn set_run_on_boot(enabled: bool) -> Result<(), String> {
+    if is_portable_build() {
+        db::save_setting("runOnBoot", "false")?;
+        return Err("Start with Windows is unavailable in the portable build".to_string());
+    }
+    set_windows_run_on_boot(enabled)?;
+    db::save_setting("runOnBoot", if enabled { "true" } else { "false" })
 }
 
 fn button_to_id(button: Button) -> i64 {
@@ -798,7 +940,10 @@ fn collect_processes() -> Result<Vec<ActiveProcess>, String> {
 
     let mut window_pids: HashSet<u32> = HashSet::new();
     unsafe {
-        EnumWindows(Some(enum_windows_proc), &mut window_pids as *mut _ as LPARAM);
+        EnumWindows(
+            Some(enum_windows_proc),
+            &mut window_pids as *mut _ as LPARAM,
+        );
     }
 
     unsafe {
@@ -845,7 +990,10 @@ fn collect_processes() -> Result<Vec<ActiveProcess>, String> {
 }
 
 #[tauri::command]
-fn get_active_processes(query: Option<String>, limit: Option<usize>) -> Result<Vec<ActiveProcess>, String> {
+fn get_active_processes(
+    query: Option<String>,
+    limit: Option<usize>,
+) -> Result<Vec<ActiveProcess>, String> {
     let normalized = query.unwrap_or_default().trim().to_ascii_lowercase();
     let limit = limit.unwrap_or(150).clamp(1, 500);
 
@@ -870,10 +1018,55 @@ pub fn run() {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .manage(AppRuntimeState {
+            skip_initial_show: AtomicBool::new(should_start_hidden_on_launch()),
+        })
         .manage(EngineState {
             running: Arc::new(AtomicBool::new(false)),
         })
         .setup(|app| {
+            let show = MenuItemBuilder::with_id("show", "Show RemapX").build(app)?;
+            let quit = MenuItemBuilder::with_id("quit", "Quit").build(app)?;
+            let tray_menu = MenuBuilder::new(app).items(&[&show, &quit]).build()?;
+            let tray_builder = TrayIconBuilder::new()
+                .menu(&tray_menu)
+                .on_menu_event(|app, event| match event.id().as_ref() {
+                    "show" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.unminimize();
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        }
+                    }
+                    "quit" => {
+                        app.exit(0);
+                    }
+                    _ => {}
+                })
+                .on_tray_icon_event(|tray, event| {
+                    if let TrayIconEvent::Click {
+                        button: MouseButton::Left,
+                        button_state: MouseButtonState::Up,
+                        ..
+                    } = event
+                    {
+                        let app = tray.app_handle();
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.unminimize();
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        }
+                    }
+                });
+
+            let tray_builder = if let Some(icon) = app.default_window_icon().cloned() {
+                tray_builder.icon(icon)
+            } else {
+                tray_builder
+            };
+
+            let _tray = tray_builder.build(app)?;
+
             let handle = app.handle();
             if let Some(main) = app.get_webview_window("main") {
                 let _ = restore_window_state(&main);
@@ -889,8 +1082,12 @@ pub fn run() {
                             }
                         }
                     }
-                    WindowEvent::CloseRequested { .. } => {
+                    WindowEvent::CloseRequested { api, .. } => {
                         let _ = save_window_state(&main_for_events);
+                        if should_minimize_to_tray() {
+                            api.prevent_close();
+                            let _ = main_for_events.hide();
+                        }
                     }
                     _ => {}
                 });
@@ -907,6 +1104,9 @@ pub fn run() {
             stop_engine,
             trigger_button_action,
             show_main_window,
+            open_main_devtools,
+            get_runtime_info,
+            set_run_on_boot,
             get_profiles,
             save_profile,
             create_profile,

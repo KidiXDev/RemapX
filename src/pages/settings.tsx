@@ -17,9 +17,16 @@ export function Settings() {
   const confirm = useConfirm();
   const [isChecking, setIsChecking] = useState(false);
   const {
+    isPortable,
+    runOnBoot,
+    startMinimized,
+    minimizeToTray,
     developerMode,
     locale,
     theme,
+    setRunOnBoot,
+    setStartMinimized,
+    setMinimizeToTray,
     setDeveloperMode,
     setLocale,
     setTheme
@@ -103,7 +110,9 @@ export function Settings() {
         <Card title={t('startupCardTitle')}>
           <div className="space-y-4">
             {/* Run on Boot */}
-            <div className="flex items-center justify-between opacity-60">
+            <div
+              className={`flex items-center justify-between ${isPortable ? 'opacity-60' : ''}`}
+            >
               <div>
                 <label className="text-xs font-semibold text-zinc-200">
                   {t('startWithWindows.label')}
@@ -112,11 +121,17 @@ export function Settings() {
                   {t('startWithWindows.description')}
                 </p>
               </div>
-              <ToggleSwitch checked={false} onChange={() => {}} disabled />
+              <ToggleSwitch
+                checked={runOnBoot}
+                onChange={setRunOnBoot}
+                disabled={isPortable}
+              />
             </div>
 
             {/* Start Minimized */}
-            <div className="flex items-center justify-between opacity-60">
+            <div
+              className={`flex items-center justify-between ${!minimizeToTray ? 'opacity-60' : ''}`}
+            >
               <div>
                 <label className="text-xs font-semibold text-zinc-200">
                   {t('startMinimized.label')}
@@ -125,11 +140,15 @@ export function Settings() {
                   {t('startMinimized.description')}
                 </p>
               </div>
-              <ToggleSwitch checked={false} onChange={() => {}} disabled />
+              <ToggleSwitch
+                checked={startMinimized}
+                onChange={setStartMinimized}
+                disabled={!minimizeToTray}
+              />
             </div>
 
             {/* Minimize to Tray */}
-            <div className="flex items-center justify-between opacity-60">
+            <div className="flex items-center justify-between">
               <div>
                 <label className="text-xs font-semibold text-zinc-200">
                   {t('minimizeToTray.label')}
@@ -138,7 +157,10 @@ export function Settings() {
                   {t('minimizeToTray.description')}
                 </p>
               </div>
-              <ToggleSwitch checked={false} onChange={() => {}} disabled />
+              <ToggleSwitch
+                checked={minimizeToTray}
+                onChange={setMinimizeToTray}
+              />
             </div>
 
             <div className="flex items-center justify-between">

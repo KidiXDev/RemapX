@@ -43,6 +43,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           APP_VERSION: ${{ github.ref_name }}
+          REMAPX_BUILD_FLAVOR: installed
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'RemapX ${{ github.ref_name }}'
@@ -51,8 +52,12 @@ jobs:
           prerelease: false
           args: ${{ matrix.args }}
 
-      - name: Prepare portable executable
+      - name: Build portable executable
+        env:
+          APP_VERSION: ${{ github.ref_name }}
+          REMAPX_BUILD_FLAVOR: portable
         run: |
+          cargo build --manifest-path src-tauri/Cargo.toml --release --target ${{ matrix.target }}
           Copy-Item -Path ${{ matrix.binary_path }} -Destination src-tauri/target/${{ matrix.target }}/release/${{ matrix.portable_name }} -Force
 
       - name: Upload portable executable to release

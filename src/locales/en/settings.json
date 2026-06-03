@@ -4,19 +4,19 @@
   "startupCardTitle": "Startup & Window Behavior",
   "startWithWindows": {
     "label": "Start with Windows",
-    "description": "Launch daemon in system tray when booting. (Coming Soon)"
+    "description": "Launch RemapX automatically when Windows starts. Unavailable in the portable build."
   },
   "startMinimized": {
     "label": "Start Minimized",
-    "description": "Do not open the GUI window on system startup. (Coming Soon)"
+    "description": "Keep the window hidden on launch. Requires Minimize to System Tray."
   },
   "minimizeToTray": {
     "label": "Minimize to System Tray",
-    "description": "Closing the window will hide it to the tray. (Coming Soon)"
+    "description": "Closing the window hides the app to the tray instead of exiting."
   },
   "developerMode": {
     "label": "Developer Mode",
-    "description": "Enable verbose diagnostic remap and injection logs."
+    "description": "Enable verbose diagnostic logs. In production builds, F12 opens devtools when this is enabled."
   },
   "languageCardTitle": "Localization",
   "languageLabel": "Display Language",

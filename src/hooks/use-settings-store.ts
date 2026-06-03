@@ -23,8 +23,13 @@ interface SettingsPayload {
   values: Record<string, string>;
 }
 
+interface RuntimeInfo {
+  is_portable: boolean;
+}
+
 interface SettingsState {
   ready: boolean;
+  isPortable: boolean;
   runOnBoot: boolean;
   startMinimized: boolean;
   minimizeToTray: boolean;
@@ -68,6 +73,7 @@ const fetchProfiles = async () => invoke<Profile[]>('get_profiles');
 
 export const useSettingsStore = create<SettingsState>()((set, get) => ({
   ready: false,
+  isPortable: false,
   runOnBoot: false,
   startMinimized: false,
   minimizeToTray: true,
@@ -79,14 +85,16 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   profiles: [],
 
   hydrate: async () => {
-    const [settings, profiles] = await Promise.all([
+    const [settings, profiles, runtimeInfo] = await Promise.all([
       invoke<SettingsPayload>('get_settings'),
-      fetchProfiles()
+      fetchProfiles(),
+      invoke<RuntimeInfo>('get_runtime_info')
     ]);
 
     const values = settings.values ?? {};
     const theme = (values.theme as ThemeType) || 'dark';
     const locale = parseLocale(values.locale);
+    const isPortable = runtimeInfo.is_portable;
     document.documentElement.setAttribute('data-theme', theme);
     void i18n.changeLanguage(locale);
     if (typeof window !== 'undefined') {
@@ -95,7 +103,8 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
 
     set({
       ready: true,
-      runOnBoot: parseBool(values.runOnBoot, false),
+      isPortable,
+      runOnBoot: isPortable ? false : parseBool(values.runOnBoot, false),
       startMinimized: parseBool(values.startMinimized, false),
       minimizeToTray: parseBool(values.minimizeToTray, true),
       developerMode: parseBool(values.developerMode, false),
@@ -108,18 +117,35 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   },
 
   setRunOnBoot: async (val) => {
+    if (get().isPortable) {
+      set({ runOnBoot: false });
+      return;
+    }
+    const prev = get().runOnBoot;
     set({ runOnBoot: val });
-    await invoke('save_setting', { key: 'runOnBoot', value: String(val) });
+    try {
+      await invoke('set_run_on_boot', { enabled: val });
+    } catch (error) {
+      set({ runOnBoot: prev });
+      throw error;
+    }
   },
 
   setStartMinimized: async (val) => {
+    if (!get().minimizeToTray && val) return;
     set({ startMinimized: val });
     await invoke('save_setting', { key: 'startMinimized', value: String(val) });
   },
 
   setMinimizeToTray: async (val) => {
-    set({ minimizeToTray: val });
+    set({
+      minimizeToTray: val,
+      startMinimized: val ? get().startMinimized : false
+    });
     await invoke('save_setting', { key: 'minimizeToTray', value: String(val) });
+    if (!val) {
+      await invoke('save_setting', { key: 'startMinimized', value: 'false' });
+    }
   },
 
   setDeveloperMode: async (val) => {

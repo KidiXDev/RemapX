@@ -11,6 +11,7 @@ export function RootLayout() {
   const { t } = useTranslation('common');
   const theme = useSettingsStore((state) => state.theme);
   const ready = useSettingsStore((state) => state.ready);
+  const developerMode = useSettingsStore((state) => state.developerMode);
   const hydrate = useSettingsStore((state) => state.hydrate);
   const hasShownWindowRef = useRef(false);
 
@@ -31,6 +32,23 @@ export function RootLayout() {
       console.error('Failed to show main window', err);
     });
   }, [ready]);
+
+  useEffect(() => {
+    if (!ready || !import.meta.env.PROD || !developerMode) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'F12') return;
+      event.preventDefault();
+      invoke('open_main_devtools').catch((err) => {
+        console.error('Failed to open devtools', err);
+      });
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [ready, developerMode]);
 
   const isSettingsPage = location.pathname === '/settings';
 
