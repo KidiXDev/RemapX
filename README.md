@@ -5,7 +5,7 @@
 <h1 align="center">RemapX</h1>
 
 <p align="center">
-  A premium, modern, and high-performance desktop application for remapping gamepad inputs to keyboard keys. Built using <b>Tauri v2</b>, <b>Rust</b>, <b>React 19</b>, and <b>TypeScript</b>.
+  Desktop gamepad remapping built with <b>Tauri v2</b>, <b>Rust</b>, <b>React 19</b>, and <b>TypeScript</b>.
 </p>
 
 <p align="center">
@@ -22,6 +22,23 @@
 - **Smart Focus Blocking**: RemapX detects when its own window is focused and temporarily pauses keyboard injection to avoid keypress loops or interference during configuration.
 - **Real-Time Log / Diagnostics View**: Track button events, active process queries, and key injection events through a clean, modern diagnostics console (with optional verbose Developer Mode logs).
 - **Multi-Language Support**: Complete localization support for **English** and **Indonesian** out of the box.
+
+## 🗺️ Roadmap
+
+- [x] Keyboard button remapping
+- [x] Process-specific profiles
+- [x] Debounce and deadzone tuning
+- [x] Diagnostics view and developer mode
+- [x] Tray behavior
+- [x] Start minimized support
+- [x] Portable build detection
+- [ ] Mouse and system-action mappings
+- [ ] Macro recording and playback
+- [ ] Profile import/export
+- [ ] Mapping validation and conflict warnings
+- [ ] Better active-profile visibility and onboarding
+
+And more...
 
 ## 🛠️ Technology Stack
 
