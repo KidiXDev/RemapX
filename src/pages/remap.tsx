@@ -1,30 +1,21 @@
 import { Button } from '@/components/common/button';
 import { Card } from '@/components/common/card';
-import { Dialog } from '@/components/common/dialog';
-import {
-  FormControl,
-  FormFieldProvider,
-  FormItem,
-  FormLabel,
-  FormMessage,
-  zodValidate
-} from '@/components/common/form';
-import { Input } from '@/components/common/input';
 import { Select } from '@/components/common/select';
 import { Slider } from '@/components/common/slider';
 import { Tabs } from '@/components/common/tabs';
 import { useToast } from '@/components/common/toast';
 import { ContentLayout } from '@/components/layout/content-layout';
 import { useConfirm } from '@/components/providers/confirmation-provider';
+import { DiagnosticsTerminal } from '@/components/template/diagnostics-terminal';
 import { Gamepad } from '@/components/template/gamepad';
+import { MappingsList } from '@/components/template/mappings-list';
 import { ProcessDialog } from '@/components/template/process-dialog';
+import { ProfileDialogs } from '@/components/template/profile-dialogs';
 import { useConnectedGamepads } from '@/hooks/use-connected-gamepads';
 import { useDelayedLoading } from '@/hooks/use-delayed-loading';
 import { useDisclosure } from '@/hooks/use-disclosure';
 import { Mapping, Profile, useSettingsStore } from '@/hooks/use-settings-store';
-import { useTauriEvent } from '@/hooks/use-tauri-event';
 import { cn } from '@/lib/utils';
-import { useForm } from '@tanstack/react-form';
 import { invoke } from '@tauri-apps/api/core';
 import {
   Activity,
@@ -35,19 +26,11 @@ import {
   Play,
   Plus,
   RefreshCw,
-  Search,
-  Terminal,
   Trash2,
-  X,
-  Zap
+  X
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { z } from 'zod';
-
-interface EngineLogPayload {
-  message: string;
-}
 
 interface ConnectedGamepad {
   id: string;
@@ -64,26 +47,6 @@ const EMPTY_PROFILE: Profile = {
   mappings: []
 };
 
-const buttonLabelMap: Record<number, string> = {
-  0: 'A',
-  1: 'B',
-  2: 'X',
-  3: 'Y',
-  4: 'LB',
-  5: 'RB',
-  6: 'LT',
-  7: 'RT',
-  8: 'Select',
-  9: 'Start',
-  10: 'Mode',
-  11: 'L3',
-  12: 'R3',
-  13: 'D-Up',
-  14: 'D-Down',
-  15: 'D-Left',
-  16: 'D-Right'
-};
-
 export function Remap() {
   const { t } = useTranslation('remap');
   const {
@@ -91,70 +54,11 @@ export function Remap() {
     activeProfile,
     setActiveProfile,
     saveProfile,
-    createProfile,
-    renameProfile,
-    deleteProfile,
-    duplicateProfile,
-    developerMode
+    deleteProfile
   } = useSettingsStore();
 
   const confirm = useConfirm();
   const toast = useToast();
-
-  const createForm = useForm({
-    defaultValues: {
-      name: ''
-    },
-    onSubmit: async ({ value }) => {
-      const name = value.name.trim();
-      try {
-        await createProfile(name);
-        toast.success(t('profile.toastCreateSuccess'));
-        createForm.reset();
-        createDialog.onClose();
-      } catch (err) {
-        console.error(err);
-        toast.error(t('profile.toastCreateError'));
-      }
-    }
-  });
-
-  const renameForm = useForm({
-    defaultValues: {
-      name: ''
-    },
-    onSubmit: async ({ value }) => {
-      const name = value.name.trim();
-      try {
-        await renameProfile(active.name, name);
-        toast.success(t('profile.toastRenameSuccess'));
-        renameDialog.onClose();
-        renameForm.reset();
-      } catch (err) {
-        console.error(err);
-        toast.error(t('profile.toastRenameError'));
-      }
-    }
-  });
-
-  const duplicateForm = useForm({
-    defaultValues: {
-      name: ''
-    },
-    onSubmit: async ({ value }) => {
-      const name = value.name.trim();
-      try {
-        await duplicateProfile(active.name, name);
-        await setActiveProfile(name);
-        toast.success(t('profile.toastDuplicateSuccess'));
-        duplicateDialog.onClose();
-        duplicateForm.reset();
-      } catch (err) {
-        console.error(err);
-        toast.error(t('profile.toastDuplicateError'));
-      }
-    }
-  });
 
   const active = useMemo(
     () =>
@@ -184,7 +88,6 @@ export function Remap() {
   };
 
   const [activeTab, setActiveTab] = useState<TabType>('bindings');
-  const [logs, setLogs] = useState<string[]>([]);
   const [engineRunning, setEngineRunning] = useState(false);
 
   const {
@@ -205,8 +108,6 @@ export function Remap() {
   const duplicateDialog = useDisclosure(false);
   const processDialog = useDisclosure(false);
 
-  const [bindingsQuery, setBindingsQuery] = useState('');
-
   const targetList = useMemo(
     () =>
       active.target_exe
@@ -215,16 +116,6 @@ export function Remap() {
         .filter(Boolean),
     [active.target_exe]
   );
-
-  const filteredMappings = useMemo(() => {
-    if (!bindingsQuery.trim()) return active.mappings;
-    const query = bindingsQuery.toLowerCase();
-    return active.mappings.filter((map) => {
-      const btnLabel = (buttonLabelMap[map.button_id] || '').toLowerCase();
-      const keyStr = (map.key_str || '').toLowerCase();
-      return btnLabel.includes(query) || keyStr.includes(query);
-    });
-  }, [active.mappings, bindingsQuery]);
 
   useEffect(() => {
     const initEngine = async () => {
@@ -291,11 +182,11 @@ export function Remap() {
 
       await saveProfile({ ...active, mappings: nextMappings });
 
-      const time = new Date().toLocaleTimeString();
-      setLogs((prev) => [
-        `[${time}] ${t('logs.remappedPrefix')} ${recordingTarget.label} ${t('logs.to')} ${keyStr}`,
-        ...prev.slice(0, 99)
-      ]);
+      window.dispatchEvent(
+        new CustomEvent('engine-log-add', {
+          detail: `${t('logs.remappedPrefix')} ${recordingTarget.label} ${t('logs.to')} ${keyStr}`
+        })
+      );
       setRecordingTarget(null);
     };
 
@@ -303,46 +194,7 @@ export function Remap() {
     return () => {
       window.removeEventListener('keydown', onKeyDown);
     };
-  }, [recordingTarget, active, saveProfile]);
-
-  useTauriEvent<EngineLogPayload>('engine-log', (event) => {
-    const time = new Date().toLocaleTimeString();
-    setLogs((prev) => [
-      `[${time}] ${event.payload.message}`,
-      ...prev.slice(0, 99)
-    ]);
-  });
-
-  useTauriEvent<string>(
-    'active-profile-changed',
-    (event) => {
-      setActiveProfile(event.payload).catch((err) => {
-        console.error('Failed to set active profile', err);
-      });
-      const time = new Date().toLocaleTimeString();
-      setLogs((prev) => [
-        `[${time}] ${t('logs.autoSwitchedPrefix')} ${event.payload}`,
-        ...prev.slice(0, 99)
-      ]);
-    },
-    [t]
-  );
-
-  useTauriEvent<{ button_id: number; pressed: boolean }>(
-    'gamepad-button-state',
-    (event) => {
-      if (!event.payload.pressed || !developerMode) return;
-      const label =
-        buttonLabelMap[event.payload.button_id] ||
-        String(event.payload.button_id);
-      const time = new Date().toLocaleTimeString();
-      setLogs((prev) => [
-        `[${time}] ${t('logs.buttonPressedPrefix')} ${label} ${t('logs.buttonPressedSuffix')}`,
-        ...prev.slice(0, 99)
-      ]);
-    },
-    [developerMode, t]
-  );
+  }, [recordingTarget, active, saveProfile, t]);
 
   const tabOptions = [
     {
@@ -464,170 +316,22 @@ export function Remap() {
                 onChange={setActiveTab}
               />
 
-              <div className="flex-1 overflow-y-auto p-5 scrollbar-thin">
+              <div
+                className={cn(
+                  'flex-1 p-5',
+                  activeTab === 'bindings'
+                    ? 'overflow-y-auto scrollbar-thin'
+                    : 'overflow-hidden flex flex-col'
+                )}
+              >
                 {activeTab === 'bindings' ? (
-                  <div className="space-y-4">
-                    {/* Search Field */}
-                    {active.mappings.length > 0 && (
-                      <Input
-                        value={bindingsQuery}
-                        onChange={(e) => setBindingsQuery(e.target.value)}
-                        placeholder={t('searchBindingsPlaceholder')}
-                        leftIcon={<Search className="w-4 h-4 text-zinc-500" />}
-                        rightIcon={
-                          bindingsQuery ? (
-                            <button
-                              onClick={() => setBindingsQuery('')}
-                              className="text-zinc-500 hover:text-zinc-300 transition"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          ) : null
-                        }
-                      />
-                    )}
-
-                    {active.mappings.length === 0 ? (
-                      <div className="text-center py-12 border border-dashed border-border-main/50 rounded-xl bg-zinc-950/15">
-                        <GamepadIcon className="w-8 h-8 text-zinc-600 mx-auto mb-2.5" />
-                        <p className="text-xs text-zinc-400 font-semibold">
-                          {t('bindings.emptyTitle')}
-                        </p>
-                        <p className="text-xs text-zinc-500 mt-1 max-w-[280px] mx-auto leading-relaxed">
-                          {t('bindings.emptyDesc')}
-                        </p>
-                      </div>
-                    ) : filteredMappings.length === 0 ? (
-                      <div className="text-center py-12">
-                        <p className="text-xs text-zinc-500">
-                          {t('bindings.noMatchPrefix')} "{bindingsQuery}".
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        {/* Table Header */}
-                        <div className="grid grid-cols-12 text-xs font-bold text-zinc-500 uppercase tracking-widest px-4 mb-1">
-                          <div className="col-span-4">
-                            {t('bindings.headerGamepadControl')}
-                          </div>
-                          <div className="col-span-1 text-center"></div>
-                          <div className="col-span-4">
-                            {t('bindings.headerMappedKey')}
-                          </div>
-                          <div className="col-span-2">
-                            {t('bindings.headerType')}
-                          </div>
-                          <div className="col-span-1 text-right">
-                            {t('bindings.headerAction')}
-                          </div>
-                        </div>
-
-                        {/* Mappings Rows */}
-                        <div className="space-y-1.5">
-                          {filteredMappings.map((map) => (
-                            <div
-                              key={`${active.name}-${map.button_id}`}
-                              className="grid grid-cols-12 items-center bg-zinc-900/20 hover:bg-zinc-900/40 border border-border-main/40 hover:border-border-hover rounded-xl px-4 py-2.5 transition duration-150 group/row"
-                            >
-                              {/* Gamepad Input */}
-                              <div className="col-span-4 flex items-center">
-                                <span className="inline-flex items-center justify-center min-w-10 h-7 px-2.5 rounded-full bg-primary-bg border border-primary-border/80 text-primary-text font-bold text-xs uppercase shadow-sm">
-                                  {buttonLabelMap[map.button_id] ||
-                                    `Button ${map.button_id}`}
-                                </span>
-                              </div>
-
-                              {/* Visual Connector */}
-                              <div className="col-span-1 flex items-center justify-center">
-                                <Zap className="w-3 h-3 text-zinc-600 group-hover/row:text-primary-text transition-colors duration-300" />
-                              </div>
-
-                              {/* Mapped Keyboard Keycap */}
-                              <div className="col-span-4 flex items-center">
-                                <kbd className="min-w-[32px] h-7 px-2.5 flex items-center justify-center rounded-lg bg-zinc-950 border border-zinc-700 text-zinc-100 text-xs font-mono font-bold shadow-md shadow-black/60 uppercase">
-                                  {map.key_str}
-                                </kbd>
-                              </div>
-
-                              {/* Mapping Type Tag */}
-                              <div className="col-span-2">
-                                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-zinc-950 text-zinc-400 border border-border-main/40 uppercase tracking-wider">
-                                  {map.mapping_type}
-                                </span>
-                              </div>
-
-                              {/* Action Column */}
-                              <div className="col-span-1 text-right">
-                                <button
-                                  onClick={() => onDeleteMapping(map.button_id)}
-                                  className="text-zinc-500 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10 transition-all active:scale-95 cursor-pointer"
-                                  title={t('bindings.deleteMapping')}
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  <MappingsList
+                    mappings={active.mappings}
+                    onDeleteMapping={onDeleteMapping}
+                    profileName={active.name}
+                  />
                 ) : (
-                  /* Terminal interface for logs */
-                  <div className="flex flex-col rounded-xl border border-border-main/70 bg-zinc-950/70 overflow-hidden font-mono text-xs h-[510px]">
-                    {/* Terminal Header */}
-                    <div className="flex items-center justify-between bg-zinc-900/60 border-b border-border-main/70 px-4 py-2 shrink-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
-                        <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/60" />
-                        <span className="w-2.5 h-2.5 rounded-full bg-green-500/60" />
-                        <span className="text-xs font-bold text-zinc-400 ml-2 tracking-wider flex items-center gap-1">
-                          <Terminal className="w-3.5 h-3.5" />
-                          <span>{t('diagnostics.streamTitle')}</span>
-                        </span>
-                      </div>
-                      <button
-                        onClick={() => setLogs([])}
-                        className="text-xs font-bold text-zinc-400 hover:text-zinc-200 transition bg-zinc-900 border border-border-main px-2 py-0.5 rounded cursor-pointer"
-                      >
-                        {t('diagnostics.clearLogs')}
-                      </button>
-                    </div>
-
-                    {/* Terminal Content */}
-                    <div className="flex-1 p-4 space-y-1 overflow-y-auto scrollbar-thin">
-                      {logs.length === 0 ? (
-                        <div className="text-zinc-500 italic py-4 text-center">
-                          {t('diagnostics.empty')}
-                        </div>
-                      ) : (
-                        logs.map((log, idx) => {
-                          let logColor = 'text-zinc-400';
-                          if (log.includes('pressed')) {
-                            logColor = 'text-primary-text font-semibold';
-                          } else if (log.includes(t('logs.remappedPrefix'))) {
-                            logColor = 'text-emerald-400';
-                          } else if (
-                            log.includes(t('logs.autoSwitchedPrefix'))
-                          ) {
-                            logColor = 'text-amber-400';
-                          }
-
-                          return (
-                            <div
-                              key={idx}
-                              className={cn(
-                                'transition-all duration-150 py-0.5',
-                                logColor
-                              )}
-                            >
-                              {log}
-                            </div>
-                          );
-                        })
-                      )}
-                    </div>
-                  </div>
+                  <DiagnosticsTerminal />
                 )}
               </div>
             </Card>
@@ -666,10 +370,7 @@ export function Remap() {
                     {/* Rename Toggle */}
                     <Button
                       variant="secondary"
-                      onClick={() => {
-                        renameForm.setFieldValue('name', active.name);
-                        renameDialog.onOpen();
-                      }}
+                      onClick={renameDialog.onOpen}
                       title={t('profile.renameTitle')}
                       className="h-9 w-9 p-0 flex items-center justify-center rounded-xl"
                     >
@@ -679,13 +380,7 @@ export function Remap() {
                     {/* Duplicate Action */}
                     <Button
                       variant="secondary"
-                      onClick={() => {
-                        duplicateForm.setFieldValue(
-                          'name',
-                          `${active.name} Copy`
-                        );
-                        duplicateDialog.onOpen();
-                      }}
+                      onClick={duplicateDialog.onOpen}
                       title={t('profile.duplicate')}
                       className="h-9 w-9 p-0 flex items-center justify-center rounded-xl"
                     >
@@ -708,10 +403,7 @@ export function Remap() {
                 {/* Create Profile Trigger Button */}
                 <Button
                   variant="secondary"
-                  onClick={() => {
-                    createForm.setFieldValue('name', '');
-                    createDialog.onOpen();
-                  }}
+                  onClick={createDialog.onOpen}
                   className="w-full justify-center gap-1 py-2 text-xs border-dashed border-border-main/70 hover:border-zinc-500 hover:bg-zinc-900/10 text-zinc-300"
                 >
                   <Plus className="w-3.5 h-3.5" />
@@ -880,247 +572,12 @@ export function Remap() {
         onRemoveTarget={onRemoveTarget}
       />
 
-      <Dialog
-        open={createDialog.isOpen}
-        onClose={() => {
-          createDialog.onClose();
-          createForm.reset();
-        }}
-        title={t('profile.createTitle')}
-        className="max-w-md border-border-main/70"
-      >
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            createForm.handleSubmit();
-          }}
-          className="space-y-6"
-        >
-          <createForm.Field
-            name="name"
-            validators={{
-              onChange: zodValidate(
-                z
-                  .string()
-                  .trim()
-                  .min(1, t('profile.validationRequired'))
-                  .refine(
-                    (val) =>
-                      !profiles.some(
-                        (p) => p.name.toLowerCase() === val.toLowerCase()
-                      ),
-                    t('profile.validationExists')
-                  )
-              )
-            }}
-            children={(field) => (
-              <FormFieldProvider field={field}>
-                <FormItem>
-                  <FormLabel>{t('profile.createPlaceholder')}</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder={t('profile.createPlaceholder')}
-                      autoFocus
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              </FormFieldProvider>
-            )}
-          />
-
-          <div className="flex justify-end gap-2 pt-4">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => {
-                createDialog.onClose();
-                createForm.reset();
-              }}
-              className="px-4 py-2 text-xs"
-            >
-              {t('profile.cancel')}
-            </Button>
-            <createForm.Subscribe
-              selector={(state) => [state.canSubmit, state.isSubmitting]}
-              children={([canSubmit, isSubmitting]) => (
-                <Button
-                  type="submit"
-                  variant="primary"
-                  disabled={!canSubmit || isSubmitting}
-                  className="px-4 py-2 text-xs"
-                >
-                  {isSubmitting ? '...' : t('profile.create')}
-                </Button>
-              )}
-            />
-          </div>
-        </form>
-      </Dialog>
-
-      <Dialog
-        open={renameDialog.isOpen}
-        onClose={() => {
-          renameDialog.onClose();
-          renameForm.reset();
-        }}
-        title={t('profile.renameTitle')}
-        className="max-w-md border-border-main/70"
-      >
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            renameForm.handleSubmit();
-          }}
-          className="space-y-6"
-        >
-          <renameForm.Field
-            name="name"
-            validators={{
-              onChange: zodValidate(
-                z
-                  .string()
-                  .trim()
-                  .min(1, t('profile.validationRequired'))
-                  .refine(
-                    (val) =>
-                      val === active.name ||
-                      !profiles.some(
-                        (p) => p.name.toLowerCase() === val.toLowerCase()
-                      ),
-                    t('profile.validationExists')
-                  )
-                  .refine(
-                    (val) => val !== active.name,
-                    t('profile.validationSameName')
-                  )
-              )
-            }}
-            children={(field) => (
-              <FormFieldProvider field={field}>
-                <FormItem>
-                  <FormLabel>{t('profile.renamePlaceholder')}</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder={t('profile.renamePlaceholder')}
-                      autoFocus
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              </FormFieldProvider>
-            )}
-          />
-
-          <div className="flex justify-end gap-2 pt-4">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => {
-                renameDialog.onClose();
-                renameForm.reset();
-              }}
-              className="px-4 py-2 text-xs"
-            >
-              {t('profile.cancel')}
-            </Button>
-            <renameForm.Subscribe
-              selector={(state) => [state.canSubmit, state.isSubmitting]}
-              children={([canSubmit, isSubmitting]) => (
-                <Button
-                  type="submit"
-                  variant="primary"
-                  disabled={!canSubmit || isSubmitting}
-                  className="px-4 py-2 text-xs"
-                >
-                  {isSubmitting ? '...' : t('profile.save')}
-                </Button>
-              )}
-            />
-          </div>
-        </form>
-      </Dialog>
-
-      <Dialog
-        open={duplicateDialog.isOpen}
-        onClose={() => {
-          duplicateDialog.onClose();
-          duplicateForm.reset();
-        }}
-        title={t('profile.duplicateTitle')}
-        className="max-w-md border-border-main/70"
-      >
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            duplicateForm.handleSubmit();
-          }}
-          className="space-y-6"
-        >
-          <duplicateForm.Field
-            name="name"
-            validators={{
-              onChange: zodValidate(
-                z
-                  .string()
-                  .trim()
-                  .min(1, t('profile.validationRequired'))
-                  .refine(
-                    (val) =>
-                      !profiles.some(
-                        (p) => p.name.toLowerCase() === val.toLowerCase()
-                      ),
-                    t('profile.validationExists')
-                  )
-              )
-            }}
-            children={(field) => (
-              <FormFieldProvider field={field}>
-                <FormItem>
-                  <FormLabel>{t('profile.duplicatePlaceholder')}</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder={t('profile.duplicatePlaceholder')}
-                      autoFocus
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              </FormFieldProvider>
-            )}
-          />
-
-          <div className="flex justify-end gap-2 pt-4">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => {
-                duplicateDialog.onClose();
-                duplicateForm.reset();
-              }}
-              className="px-4 py-2 text-xs"
-            >
-              {t('profile.cancel')}
-            </Button>
-            <duplicateForm.Subscribe
-              selector={(state) => [state.canSubmit, state.isSubmitting]}
-              children={([canSubmit, isSubmitting]) => (
-                <Button
-                  type="submit"
-                  variant="primary"
-                  disabled={!canSubmit || isSubmitting}
-                  className="px-4 py-2 text-xs"
-                >
-                  {isSubmitting ? '...' : t('profile.duplicate')}
-                </Button>
-              )}
-            />
-          </div>
-        </form>
-      </Dialog>
+      <ProfileDialogs
+        createDisclosure={createDialog}
+        renameDisclosure={renameDialog}
+        duplicateDisclosure={duplicateDialog}
+        activeProfileName={active.name}
+      />
     </>
   );
 }
