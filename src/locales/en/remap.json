@@ -45,6 +45,8 @@
     "deadzoneLabel": "Joystick Deadzone",
     "deadzoneDesc": "Inner circular deadzone threshold for sticks to prevent stick drift.",
     "duplicate": "Duplicate",
+    "duplicateTitle": "Duplicate Profile",
+    "duplicatePlaceholder": "New profile name",
     "renamePromptTitle": "Delete Profile",
     "renamePromptDescPrefix": "Are you sure you want to delete the profile",
     "renamePromptDescSuffix": "? This will permanently remove all configured key bindings.",

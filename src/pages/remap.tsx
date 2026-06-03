@@ -2,6 +2,7 @@ import { Button } from '@/components/common/button';
 import { Card } from '@/components/common/card';
 import { useConfirm } from '@/components/common/confirmation-provider';
 import { Dialog } from '@/components/common/dialog';
+import { Input } from '@/components/common/input';
 import { Select } from '@/components/common/select';
 import { Slider } from '@/components/common/slider';
 import { Tabs } from '@/components/common/tabs';
@@ -130,6 +131,8 @@ export function Remap() {
   const [isCreatingProfile, setIsCreatingProfile] = useState(false);
   const [renameValue, setRenameValue] = useState('');
   const [isRenaming, setIsRenaming] = useState(false);
+  const [duplicateValue, setDuplicateValue] = useState('');
+  const [isDuplicating, setIsDuplicating] = useState(false);
 
   const [isProcessDialogOpen, setIsProcessDialogOpen] = useState(false);
   const [processQuery, setProcessQuery] = useState('');
@@ -445,6 +448,15 @@ export function Remap() {
     setRenameValue('');
   };
 
+  const onDuplicateProfile = async () => {
+    const value = duplicateValue.trim();
+    if (!value || value === active.name) return;
+    await duplicateProfile(active.name, value);
+    await setActiveProfile(value);
+    setIsDuplicating(false);
+    setDuplicateValue('');
+  };
+
   const getProcessBadge = (exeName: string) => {
     const clean = exeName.replace(/\.exe$/i, '').trim();
     return clean ? clean[0].toUpperCase() : '?';
@@ -533,23 +545,22 @@ export function Remap() {
                   <div className="space-y-4">
                     {/* Search Field */}
                     {active.mappings.length > 0 && (
-                      <div className="flex items-center gap-2 rounded-xl border border-border-main/70 bg-zinc-950/40 px-3 py-2 transition-all focus-within:border-primary-border/80">
-                        <Search className="w-4 h-4 text-zinc-500" />
-                        <input
-                          value={bindingsQuery}
-                          onChange={(e) => setBindingsQuery(e.target.value)}
-                          placeholder={t('searchBindingsPlaceholder')}
-                          className="flex-1 bg-transparent text-xs outline-none text-zinc-200"
-                        />
-                        {bindingsQuery && (
-                          <button
-                            onClick={() => setBindingsQuery('')}
-                            className="text-zinc-500 hover:text-zinc-300 transition"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
+                      <Input
+                        value={bindingsQuery}
+                        onChange={(e) => setBindingsQuery(e.target.value)}
+                        placeholder={t('searchBindingsPlaceholder')}
+                        leftIcon={<Search className="w-4 h-4 text-zinc-500" />}
+                        rightIcon={
+                          bindingsQuery ? (
+                            <button
+                              onClick={() => setBindingsQuery('')}
+                              className="text-zinc-500 hover:text-zinc-300 transition"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          ) : null
+                        }
+                      />
                     )}
 
                     {active.mappings.length === 0 ? (
@@ -744,9 +755,10 @@ export function Remap() {
                     {/* Duplicate Action */}
                     <Button
                       variant="secondary"
-                      onClick={() =>
-                        duplicateProfile(active.name, `${active.name} Copy`)
-                      }
+                      onClick={() => {
+                        setDuplicateValue(`${active.name} Copy`);
+                        setIsDuplicating(true);
+                      }}
                       title={t('profile.duplicate')}
                       className="h-9 w-9 p-0 flex items-center justify-center rounded-xl"
                     >
@@ -944,15 +956,13 @@ export function Remap() {
         className="border-border-main/70"
       >
         <div className="space-y-4">
-          <div className="flex items-center gap-2 rounded-xl border border-border-main/70 bg-zinc-950/40 px-3 py-2 transition-all focus-within:border-primary-border/60">
-            <Search className="w-4 h-4 text-zinc-500" />
-            <input
-              value={processQuery}
-              onChange={(e) => setProcessQuery(e.target.value)}
-              placeholder={t('process.searchPlaceholder')}
-              className="flex-1 bg-transparent text-xs outline-none text-zinc-200"
-            />
-          </div>
+          <Input
+            value={processQuery}
+            onChange={(e) => setProcessQuery(e.target.value)}
+            placeholder={t('process.searchPlaceholder')}
+            leftIcon={<Search className="w-4 h-4 text-zinc-500" />}
+            containerClassName="focus-within:border-primary-border/60"
+          />
 
           <div className="max-h-72 overflow-y-auto space-y-2 pr-1 scrollbar-thin">
             {showProcessLoading ? (
@@ -1034,11 +1044,10 @@ export function Remap() {
             <label className="text-xs text-zinc-400">
               {t('profile.createPlaceholder')}
             </label>
-            <input
+            <Input
               value={newProfileName}
               onChange={(e) => setNewProfileName(e.target.value)}
               placeholder={t('profile.createPlaceholder')}
-              className="w-full rounded-lg bg-zinc-950/80 border border-border-main px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-primary transition-colors focus-within:border-primary-border/60"
               autoFocus
             />
           </div>
@@ -1087,11 +1096,10 @@ export function Remap() {
             <label className="text-xs text-zinc-400">
               {t('profile.renamePlaceholder')}
             </label>
-            <input
+            <Input
               value={renameValue}
               onChange={(e) => setRenameValue(e.target.value)}
               placeholder={t('profile.renamePlaceholder')}
-              className="w-full rounded-lg bg-zinc-950/80 border border-border-main px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-primary transition-colors focus-within:border-primary-border/60"
               autoFocus
             />
           </div>
@@ -1115,6 +1123,58 @@ export function Remap() {
               className="px-4 py-2 text-xs"
             >
               {t('profile.save')}
+            </Button>
+          </div>
+        </form>
+      </Dialog>
+
+      <Dialog
+        open={isDuplicating}
+        onClose={() => {
+          setIsDuplicating(false);
+          setDuplicateValue('');
+        }}
+        title={t('profile.duplicateTitle')}
+        className="max-w-md border-border-main/70"
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            onDuplicateProfile();
+          }}
+          className="space-y-4"
+        >
+          <div className="space-y-1.5">
+            <label className="text-xs text-zinc-400">
+              {t('profile.duplicatePlaceholder')}
+            </label>
+            <Input
+              value={duplicateValue}
+              onChange={(e) => setDuplicateValue(e.target.value)}
+              placeholder={t('profile.duplicatePlaceholder')}
+              autoFocus
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setIsDuplicating(false);
+                setDuplicateValue('');
+              }}
+              className="px-4 py-2 text-xs"
+            >
+              {t('profile.cancel')}
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={!duplicateValue.trim() || profiles.some(p => p.name.toLowerCase() === duplicateValue.trim().toLowerCase())}
+              className="px-4 py-2 text-xs"
+            >
+              {t('profile.duplicate')}
             </Button>
           </div>
         </form>
