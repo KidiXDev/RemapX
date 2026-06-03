@@ -3,6 +3,7 @@ import { Card } from '@/components/common/card';
 import { useConfirm } from '@/components/common/confirmation-provider';
 import { Dialog } from '@/components/common/dialog';
 import { Input } from '@/components/common/input';
+import { useToast } from '@/components/common/toast';
 import { Select } from '@/components/common/select';
 import { Slider } from '@/components/common/slider';
 import { Tabs } from '@/components/common/tabs';
@@ -90,6 +91,7 @@ export function Remap() {
   } = useSettingsStore();
 
   const confirm = useConfirm();
+  const toast = useToast();
 
   const active = useMemo(
     () =>
@@ -107,7 +109,14 @@ export function Remap() {
       variant: 'destructive'
     });
     if (confirmed) {
-      deleteProfile(active.name);
+      try {
+        const deletedName = active.name;
+        await deleteProfile(deletedName);
+        toast.success(t('profile.toastDeleteSuccess'));
+      } catch (err) {
+        console.error(err);
+        toast.error(t('profile.toastDeleteError'));
+      }
     }
   };
 
@@ -435,26 +444,44 @@ export function Remap() {
   const onCreateProfile = async () => {
     const name = newProfileName.trim();
     if (!name) return;
-    await createProfile(name);
-    setNewProfileName('');
-    setIsCreatingProfile(false);
+    try {
+      await createProfile(name);
+      toast.success(t('profile.toastCreateSuccess'));
+      setNewProfileName('');
+      setIsCreatingProfile(false);
+    } catch (err) {
+      console.error(err);
+      toast.error(t('profile.toastCreateError'));
+    }
   };
 
   const onRenameProfile = async () => {
     const value = renameValue.trim();
     if (!value || value === active.name) return;
-    await renameProfile(active.name, value);
-    setIsRenaming(false);
-    setRenameValue('');
+    try {
+      await renameProfile(active.name, value);
+      toast.success(t('profile.toastRenameSuccess'));
+      setIsRenaming(false);
+      setRenameValue('');
+    } catch (err) {
+      console.error(err);
+      toast.error(t('profile.toastRenameError'));
+    }
   };
 
   const onDuplicateProfile = async () => {
     const value = duplicateValue.trim();
     if (!value || value === active.name) return;
-    await duplicateProfile(active.name, value);
-    await setActiveProfile(value);
-    setIsDuplicating(false);
-    setDuplicateValue('');
+    try {
+      await duplicateProfile(active.name, value);
+      await setActiveProfile(value);
+      toast.success(t('profile.toastDuplicateSuccess'));
+      setIsDuplicating(false);
+      setDuplicateValue('');
+    } catch (err) {
+      console.error(err);
+      toast.error(t('profile.toastDuplicateError'));
+    }
   };
 
   const getProcessBadge = (exeName: string) => {
