@@ -1,4 +1,5 @@
 import RootLayout from '@/components/layout/root-layout';
+import { QueryProvider } from '@/components/providers/query-provider';
 import { lazy } from 'react';
 import { createHashRouter, RouterProvider } from 'react-router';
 
@@ -23,7 +24,11 @@ const router = createHashRouter([
 ]);
 
 export function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <QueryProvider>
+      <RouterProvider router={router} />
+    </QueryProvider>
+  );
 }
 
 export default App;

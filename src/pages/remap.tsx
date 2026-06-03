@@ -1,6 +1,5 @@
 import { Button } from '@/components/common/button';
 import { Card } from '@/components/common/card';
-import { useConfirm } from '@/components/common/confirmation-provider';
 import { Dialog } from '@/components/common/dialog';
 import {
   FormControl,
@@ -16,12 +15,17 @@ import { Slider } from '@/components/common/slider';
 import { Tabs } from '@/components/common/tabs';
 import { useToast } from '@/components/common/toast';
 import { ContentLayout } from '@/components/layout/content-layout';
+import { useConfirm } from '@/components/providers/confirmation-provider';
 import { Gamepad } from '@/components/template/gamepad';
+import { useConnectedGamepads } from '@/hooks/use-connected-gamepads';
+import { useDelayedLoading } from '@/hooks/use-delayed-loading';
+import { useDisclosure } from '@/hooks/use-disclosure';
 import { Mapping, Profile, useSettingsStore } from '@/hooks/use-settings-store';
+import { useTauriEvent } from '@/hooks/use-tauri-event';
 import { cn } from '@/lib/utils';
 import { useForm } from '@tanstack/react-form';
+import { useQuery } from '@tanstack/react-query';
 import { invoke } from '@tauri-apps/api/core';
-import { listen } from '@tauri-apps/api/event';
 import {
   Activity,
   Copy,
@@ -37,7 +41,7 @@ import {
   X,
   Zap
 } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDebounce } from 'use-debounce';
 import { z } from 'zod';
@@ -113,7 +117,7 @@ export function Remap() {
         await createProfile(name);
         toast.success(t('profile.toastCreateSuccess'));
         createForm.reset();
-        setIsCreatingProfile(false);
+        createDialog.onClose();
       } catch (err) {
         console.error(err);
         toast.error(t('profile.toastCreateError'));
@@ -130,7 +134,7 @@ export function Remap() {
       try {
         await renameProfile(active.name, name);
         toast.success(t('profile.toastRenameSuccess'));
-        setIsRenaming(false);
+        renameDialog.onClose();
         renameForm.reset();
       } catch (err) {
         console.error(err);
@@ -149,7 +153,7 @@ export function Remap() {
         await duplicateProfile(active.name, name);
         await setActiveProfile(name);
         toast.success(t('profile.toastDuplicateSuccess'));
-        setIsDuplicating(false);
+        duplicateDialog.onClose();
         duplicateForm.reset();
       } catch (err) {
         console.error(err);
@@ -188,29 +192,40 @@ export function Remap() {
   const [activeTab, setActiveTab] = useState<TabType>('bindings');
   const [logs, setLogs] = useState<string[]>([]);
   const [engineRunning, setEngineRunning] = useState(false);
-  const [connectedGamepads, setConnectedGamepads] = useState<
-    ConnectedGamepad[]
-  >([]);
-  const [isLoadingGamepads, setIsLoadingGamepads] = useState(false);
-  const [showGamepadLoading, setShowGamepadLoading] = useState(false);
-  const gamepadRefreshInFlightRef = useRef(false);
-  const gamepadSignatureRef = useRef('');
+
+  const {
+    gamepads: connectedGamepads,
+    isLoading: isLoadingGamepads,
+    refresh: loadConnectedGamepads
+  } = useConnectedGamepads(1500);
+
+  const showGamepadLoading = useDelayedLoading(isLoadingGamepads, 150);
 
   const [recordingTarget, setRecordingTarget] = useState<{
     buttonId: number;
     label: string;
   } | null>(null);
 
-  const [isCreatingProfile, setIsCreatingProfile] = useState(false);
-  const [isRenaming, setIsRenaming] = useState(false);
-  const [isDuplicating, setIsDuplicating] = useState(false);
+  const createDialog = useDisclosure(false);
+  const renameDialog = useDisclosure(false);
+  const duplicateDialog = useDisclosure(false);
+  const processDialog = useDisclosure(false);
 
-  const [isProcessDialogOpen, setIsProcessDialogOpen] = useState(false);
   const [processQuery, setProcessQuery] = useState('');
   const [debouncedProcessQuery] = useDebounce(processQuery, 250);
-  const [processes, setProcesses] = useState<ActiveProcess[]>([]);
-  const [isLoadingProcesses, setIsLoadingProcesses] = useState(false);
-  const [showProcessLoading, setShowProcessLoading] = useState(false);
+
+  const { data: processes = [], isLoading: isLoadingProcesses } = useQuery<
+    ActiveProcess[]
+  >({
+    queryKey: ['active-processes', debouncedProcessQuery],
+    queryFn: () =>
+      invoke<ActiveProcess[]>('get_active_processes', {
+        query: debouncedProcessQuery || null,
+        limit: 200
+      }),
+    enabled: processDialog.isOpen
+  });
+  const showProcessLoading = useDelayedLoading(isLoadingProcesses, 150);
 
   const [bindingsQuery, setBindingsQuery] = useState('');
 
@@ -233,97 +248,10 @@ export function Remap() {
     });
   }, [active.mappings, bindingsQuery]);
 
-  const loadConnectedGamepads = async (opts?: { silent?: boolean }) => {
-    if (gamepadRefreshInFlightRef.current) return;
-    gamepadRefreshInFlightRef.current = true;
-    const silent = opts?.silent === true;
-    if (!silent) setIsLoadingGamepads(true);
-    try {
-      const pads = await invoke<ConnectedGamepad[]>('get_connected_gamepads');
-      const signature = pads
-        .map((pad) => `${pad.id}:${pad.name}`)
-        .sort()
-        .join('|');
-      if (signature !== gamepadSignatureRef.current) {
-        gamepadSignatureRef.current = signature;
-        setConnectedGamepads(pads);
-      }
-    } catch (error) {
-      console.error('Failed to load connected gamepads', error);
-      if (gamepadSignatureRef.current !== '') {
-        gamepadSignatureRef.current = '';
-        setConnectedGamepads([]);
-      }
-    } finally {
-      if (!silent) setIsLoadingGamepads(false);
-      gamepadRefreshInFlightRef.current = false;
-    }
-  };
-
-  const loadProcesses = async (query = '') => {
-    setIsLoadingProcesses(true);
-    try {
-      const list = await invoke<ActiveProcess[]>('get_active_processes', {
-        query: query || null,
-        limit: 200
-      });
-      setProcesses(list);
-    } catch (error) {
-      console.error('Failed to load process list', error);
-      setProcesses([]);
-    } finally {
-      setIsLoadingProcesses(false);
-    }
-  };
-
-  useEffect(() => {
-    void loadConnectedGamepads();
-  }, []);
-
-  useEffect(() => {
-    const id = window.setInterval(() => {
-      void loadConnectedGamepads({ silent: true });
-    }, 1500);
-    return () => window.clearInterval(id);
-  }, []);
-
-  useEffect(() => {
-    if (isProcessDialogOpen) {
-      loadProcesses(debouncedProcessQuery);
-    }
-  }, [debouncedProcessQuery, isProcessDialogOpen]);
-
-  useEffect(() => {
-    if (!isLoadingGamepads) {
-      setShowGamepadLoading(false);
-      return;
-    }
-
-    const timer = window.setTimeout(() => {
-      setShowGamepadLoading(true);
-    }, 150);
-
-    return () => window.clearTimeout(timer);
-  }, [isLoadingGamepads]);
-
-  useEffect(() => {
-    if (!isLoadingProcesses) {
-      setShowProcessLoading(false);
-      return;
-    }
-
-    const timer = window.setTimeout(() => {
-      setShowProcessLoading(true);
-    }, 150);
-
-    return () => window.clearTimeout(timer);
-  }, [isLoadingProcesses]);
-
   useEffect(() => {
     const initEngine = async () => {
       try {
         const pads = await invoke<ConnectedGamepad[]>('get_connected_gamepads');
-        setConnectedGamepads(pads);
         if (pads.length === 0) return;
         await invoke('start_engine');
         setEngineRunning(true);
@@ -399,24 +327,17 @@ export function Remap() {
     };
   }, [recordingTarget, active, saveProfile]);
 
-  useEffect(() => {
-    let unlistenLog: (() => void) | undefined;
-    let unlistenActive: (() => void) | undefined;
-    let unlistenButton: (() => void) | undefined;
+  useTauriEvent<EngineLogPayload>('engine-log', (event) => {
+    const time = new Date().toLocaleTimeString();
+    setLogs((prev) => [
+      `[${time}] ${event.payload.message}`,
+      ...prev.slice(0, 99)
+    ]);
+  });
 
-    listen<EngineLogPayload>('engine-log', (event) => {
-      const time = new Date().toLocaleTimeString();
-      setLogs((prev) => [
-        `[${time}] ${event.payload.message}`,
-        ...prev.slice(0, 99)
-      ]);
-    })
-      .then((fn) => {
-        unlistenLog = fn;
-      })
-      .catch((err) => console.error('Failed to listen engine-log', err));
-
-    listen<string>('active-profile-changed', (event) => {
+  useTauriEvent<string>(
+    'active-profile-changed',
+    (event) => {
       setActiveProfile(event.payload).catch((err) => {
         console.error('Failed to set active profile', err);
       });
@@ -425,41 +346,25 @@ export function Remap() {
         `[${time}] ${t('logs.autoSwitchedPrefix')} ${event.payload}`,
         ...prev.slice(0, 99)
       ]);
-    })
-      .then((fn) => {
-        unlistenActive = fn;
-      })
-      .catch((err) =>
-        console.error('Failed to listen active-profile-changed', err)
-      );
+    },
+    [t]
+  );
 
-    listen<{ button_id: number; pressed: boolean }>(
-      'gamepad-button-state',
-      (event) => {
-        if (!event.payload.pressed || !developerMode) return;
-        const label =
-          buttonLabelMap[event.payload.button_id] ||
-          String(event.payload.button_id);
-        const time = new Date().toLocaleTimeString();
-        setLogs((prev) => [
-          `[${time}] ${t('logs.buttonPressedPrefix')} ${label} ${t('logs.buttonPressedSuffix')}`,
-          ...prev.slice(0, 99)
-        ]);
-      }
-    )
-      .then((fn) => {
-        unlistenButton = fn;
-      })
-      .catch((err) =>
-        console.error('Failed to listen gamepad-button-state', err)
-      );
-
-    return () => {
-      if (unlistenLog) unlistenLog();
-      if (unlistenActive) unlistenActive();
-      if (unlistenButton) unlistenButton();
-    };
-  }, [setActiveProfile, developerMode, t]);
+  useTauriEvent<{ button_id: number; pressed: boolean }>(
+    'gamepad-button-state',
+    (event) => {
+      if (!event.payload.pressed || !developerMode) return;
+      const label =
+        buttonLabelMap[event.payload.button_id] ||
+        String(event.payload.button_id);
+      const time = new Date().toLocaleTimeString();
+      setLogs((prev) => [
+        `[${time}] ${t('logs.buttonPressedPrefix')} ${label} ${t('logs.buttonPressedSuffix')}`,
+        ...prev.slice(0, 99)
+      ]);
+    },
+    [developerMode, t]
+  );
 
   const tabOptions = [
     {
@@ -790,7 +695,7 @@ export function Remap() {
                       variant="secondary"
                       onClick={() => {
                         renameForm.setFieldValue('name', active.name);
-                        setIsRenaming(true);
+                        renameDialog.onOpen();
                       }}
                       title={t('profile.renameTitle')}
                       className="h-9 w-9 p-0 flex items-center justify-center rounded-xl"
@@ -806,7 +711,7 @@ export function Remap() {
                           'name',
                           `${active.name} Copy`
                         );
-                        setIsDuplicating(true);
+                        duplicateDialog.onOpen();
                       }}
                       title={t('profile.duplicate')}
                       className="h-9 w-9 p-0 flex items-center justify-center rounded-xl"
@@ -832,7 +737,7 @@ export function Remap() {
                   variant="secondary"
                   onClick={() => {
                     createForm.setFieldValue('name', '');
-                    setIsCreatingProfile(true);
+                    createDialog.onOpen();
                   }}
                   className="w-full justify-center gap-1 py-2 text-xs border-dashed border-border-main/70 hover:border-zinc-500 hover:bg-zinc-900/10 text-zinc-300"
                 >
@@ -878,9 +783,8 @@ export function Remap() {
                 <Button
                   variant="secondary"
                   onClick={() => {
-                    setIsProcessDialogOpen(true);
+                    processDialog.onOpen();
                     setProcessQuery('');
-                    loadProcesses('');
                   }}
                   className="py-1 px-2.5 h-7 rounded-lg text-xs font-bold"
                 >
@@ -999,8 +903,8 @@ export function Remap() {
       </ContentLayout>
 
       <Dialog
-        open={isProcessDialogOpen}
-        onClose={() => setIsProcessDialogOpen(false)}
+        open={processDialog.isOpen}
+        onClose={processDialog.onClose}
         title={t('process.title')}
         description={t('process.description')}
         className="border-border-main/70"
@@ -1074,9 +978,9 @@ export function Remap() {
       </Dialog>
 
       <Dialog
-        open={isCreatingProfile}
+        open={createDialog.isOpen}
         onClose={() => {
-          setIsCreatingProfile(false);
+          createDialog.onClose();
           createForm.reset();
         }}
         title={t('profile.createTitle')}
@@ -1128,7 +1032,7 @@ export function Remap() {
               type="button"
               variant="secondary"
               onClick={() => {
-                setIsCreatingProfile(false);
+                createDialog.onClose();
                 createForm.reset();
               }}
               className="px-4 py-2 text-xs"
@@ -1153,9 +1057,9 @@ export function Remap() {
       </Dialog>
 
       <Dialog
-        open={isRenaming}
+        open={renameDialog.isOpen}
         onClose={() => {
-          setIsRenaming(false);
+          renameDialog.onClose();
           renameForm.reset();
         }}
         title={t('profile.renameTitle')}
@@ -1212,7 +1116,7 @@ export function Remap() {
               type="button"
               variant="secondary"
               onClick={() => {
-                setIsRenaming(false);
+                renameDialog.onClose();
                 renameForm.reset();
               }}
               className="px-4 py-2 text-xs"
@@ -1237,9 +1141,9 @@ export function Remap() {
       </Dialog>
 
       <Dialog
-        open={isDuplicating}
+        open={duplicateDialog.isOpen}
         onClose={() => {
-          setIsDuplicating(false);
+          duplicateDialog.onClose();
           duplicateForm.reset();
         }}
         title={t('profile.duplicateTitle')}
@@ -1291,7 +1195,7 @@ export function Remap() {
               type="button"
               variant="secondary"
               onClick={() => {
-                setIsDuplicating(false);
+                duplicateDialog.onClose();
                 duplicateForm.reset();
               }}
               className="px-4 py-2 text-xs"

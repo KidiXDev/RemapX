@@ -1,10 +1,10 @@
-import { ConfirmationProvider } from '@/components/common/confirmation-provider';
 import { ToastProvider } from '@/components/common/toast';
 import { Titlebar } from '@/components/layout/titlebar';
+import { ConfirmationProvider } from '@/components/providers/confirmation-provider';
 import { useSettingsStore } from '@/hooks/use-settings-store';
 import { invoke } from '@tauri-apps/api/core';
-import { useTranslation } from 'react-i18next';
 import { Suspense, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Outlet, useLocation } from 'react-router';
 
 export function RootLayout() {

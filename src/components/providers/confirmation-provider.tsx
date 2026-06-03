@@ -1,7 +1,7 @@
+import { Button } from '@/components/common/button';
+import { Dialog } from '@/components/common/dialog';
 import { AlertTriangle, HelpCircle, Info } from 'lucide-react';
 import React, { createContext, useContext, useRef, useState } from 'react';
-import { Button } from './button';
-import { Dialog } from './dialog';
 
 export interface ConfirmOptions {
   title: string;
