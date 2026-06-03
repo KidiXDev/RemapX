@@ -38,7 +38,7 @@
     "cancel": "Cancel",
     "createTrigger": "Create New Profile",
     "createTitle": "Create Profile",
-    "createPlaceholder": "Profile name...",
+    "createPlaceholder": "Profile name",
     "create": "Create",
     "debounceLabel": "Debounce",
     "debounceDesc": "Filters hardware switch chatter on button activations to prevent double clicks.",

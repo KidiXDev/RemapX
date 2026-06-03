@@ -766,78 +766,17 @@ export function Remap() {
                   </div>
                 </div>
 
-                {/* Inline Rename Form */}
-                {isRenaming && (
-                  <div className="p-3 rounded-xl border border-primary-border bg-primary-bg/10 space-y-2 animate-fade-in">
-                    <span className="text-xs font-bold text-primary-text uppercase tracking-wider">
-                      {t('profile.renameTitle')}
-                    </span>
-                    <div className="flex gap-2">
-                      <input
-                        value={renameValue}
-                        onChange={(e) => setRenameValue(e.target.value)}
-                        className="flex-1 rounded-lg bg-zinc-950/80 border border-border-main px-3 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-primary"
-                        placeholder={t('profile.renamePlaceholder')}
-                        autoFocus
-                      />
-                      <Button
-                        variant="primary"
-                        onClick={onRenameProfile}
-                        className="h-8 py-0 px-3 text-xs"
-                      >
-                        {t('profile.save')}
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        onClick={() => setIsRenaming(false)}
-                        className="h-8 py-0 px-3 text-xs"
-                      >
-                        {t('profile.cancel')}
-                      </Button>
-                    </div>
-                  </div>
-                )}
 
-                {/* Inline Create Profile Trigger/Form */}
-                {!isCreatingProfile ? (
-                  <Button
-                    variant="secondary"
-                    onClick={() => setIsCreatingProfile(true)}
-                    className="w-full justify-center gap-1 py-2 text-xs border-dashed border-border-main/70 hover:border-zinc-500 hover:bg-zinc-900/10 text-zinc-300"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>{t('profile.createTrigger')}</span>
-                  </Button>
-                ) : (
-                  <div className="p-3 rounded-xl border border-border-main bg-zinc-900/20 space-y-2 animate-fade-in">
-                    <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">
-                      {t('profile.createTitle')}
-                    </span>
-                    <div className="flex gap-2">
-                      <input
-                        value={newProfileName}
-                        onChange={(e) => setNewProfileName(e.target.value)}
-                        placeholder={t('profile.createPlaceholder')}
-                        className="flex-1 rounded-lg bg-zinc-950/80 border border-border-main px-3 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-primary"
-                        autoFocus
-                      />
-                      <Button
-                        variant="primary"
-                        onClick={onCreateProfile}
-                        className="h-8 py-0 px-3 text-xs"
-                      >
-                        {t('profile.create')}
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        onClick={() => setIsCreatingProfile(false)}
-                        className="h-8 py-0 px-3 text-xs"
-                      >
-                        {t('profile.cancel')}
-                      </Button>
-                    </div>
-                  </div>
-                )}
+
+                {/* Create Profile Trigger Button */}
+                <Button
+                  variant="secondary"
+                  onClick={() => setIsCreatingProfile(true)}
+                  className="w-full justify-center gap-1 py-2 text-xs border-dashed border-border-main/70 hover:border-zinc-500 hover:bg-zinc-900/10 text-zinc-300"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>{t('profile.createTrigger')}</span>
+                </Button>
               </div>
 
               {/* Profile Slider Settings */}
@@ -1073,6 +1012,112 @@ export function Remap() {
             )}
           </div>
         </div>
+      </Dialog>
+
+      <Dialog
+        open={isCreatingProfile}
+        onClose={() => {
+          setIsCreatingProfile(false);
+          setNewProfileName('');
+        }}
+        title={t('profile.createTitle')}
+        className="max-w-md border-border-main/70"
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            onCreateProfile();
+          }}
+          className="space-y-4"
+        >
+          <div className="space-y-1.5">
+            <label className="text-xs text-zinc-400">
+              {t('profile.createPlaceholder')}
+            </label>
+            <input
+              value={newProfileName}
+              onChange={(e) => setNewProfileName(e.target.value)}
+              placeholder={t('profile.createPlaceholder')}
+              className="w-full rounded-lg bg-zinc-950/80 border border-border-main px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-primary transition-colors focus-within:border-primary-border/60"
+              autoFocus
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setIsCreatingProfile(false);
+                setNewProfileName('');
+              }}
+              className="px-4 py-2 text-xs"
+            >
+              {t('profile.cancel')}
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={!newProfileName.trim()}
+              className="px-4 py-2 text-xs"
+            >
+              {t('profile.create')}
+            </Button>
+          </div>
+        </form>
+      </Dialog>
+
+      <Dialog
+        open={isRenaming}
+        onClose={() => {
+          setIsRenaming(false);
+          setRenameValue('');
+        }}
+        title={t('profile.renameTitle')}
+        className="max-w-md border-border-main/70"
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            onRenameProfile();
+          }}
+          className="space-y-4"
+        >
+          <div className="space-y-1.5">
+            <label className="text-xs text-zinc-400">
+              {t('profile.renamePlaceholder')}
+            </label>
+            <input
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              placeholder={t('profile.renamePlaceholder')}
+              className="w-full rounded-lg bg-zinc-950/80 border border-border-main px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-primary transition-colors focus-within:border-primary-border/60"
+              autoFocus
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setIsRenaming(false);
+                setRenameValue('');
+              }}
+              className="px-4 py-2 text-xs"
+            >
+              {t('profile.cancel')}
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={!renameValue.trim() || renameValue.trim() === active.name}
+              className="px-4 py-2 text-xs"
+            >
+              {t('profile.save')}
+            </Button>
+          </div>
+        </form>
       </Dialog>
     </>
   );

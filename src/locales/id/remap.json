@@ -38,7 +38,7 @@
     "cancel": "Batal",
     "createTrigger": "Buat Profil Baru",
     "createTitle": "Create Profile",
-    "createPlaceholder": "Nama profil...",
+    "createPlaceholder": "Nama profil",
     "create": "Buat",
     "debounceLabel": "Debounce",
     "debounceDesc": "Filter chatter switch hardware saat tombol ditekan untuk mencegah double click.",
