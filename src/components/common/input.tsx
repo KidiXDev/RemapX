@@ -45,7 +45,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       return (
         <div
           className={cn(
-            'flex items-center gap-2 rounded-xl border bg-zinc-950/40 px-3 py-2 transition-all focus-within:border-primary-border/80',
+            'flex items-center gap-2 rounded-xl border bg-zinc-950/40 px-3 py-2 transition-all focus-within:border-primary',
             error ? 'border-red-500/80' : 'border-border-main/70',
             containerClassName
           )}

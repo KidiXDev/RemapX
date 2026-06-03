@@ -2,15 +2,24 @@ import { Button } from '@/components/common/button';
 import { Card } from '@/components/common/card';
 import { useConfirm } from '@/components/common/confirmation-provider';
 import { Dialog } from '@/components/common/dialog';
+import {
+  FormControl,
+  FormFieldProvider,
+  FormItem,
+  FormLabel,
+  FormMessage,
+  zodValidate
+} from '@/components/common/form';
 import { Input } from '@/components/common/input';
-import { useToast } from '@/components/common/toast';
 import { Select } from '@/components/common/select';
 import { Slider } from '@/components/common/slider';
 import { Tabs } from '@/components/common/tabs';
+import { useToast } from '@/components/common/toast';
 import { ContentLayout } from '@/components/layout/content-layout';
 import { Gamepad } from '@/components/template/gamepad';
 import { Mapping, Profile, useSettingsStore } from '@/hooks/use-settings-store';
 import { cn } from '@/lib/utils';
+import { useForm } from '@tanstack/react-form';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import {
@@ -31,6 +40,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDebounce } from 'use-debounce';
+import { z } from 'zod';
 
 interface EngineLogPayload {
   message: string;
@@ -93,6 +103,61 @@ export function Remap() {
   const confirm = useConfirm();
   const toast = useToast();
 
+  const createForm = useForm({
+    defaultValues: {
+      name: ''
+    },
+    onSubmit: async ({ value }) => {
+      const name = value.name.trim();
+      try {
+        await createProfile(name);
+        toast.success(t('profile.toastCreateSuccess'));
+        createForm.reset();
+        setIsCreatingProfile(false);
+      } catch (err) {
+        console.error(err);
+        toast.error(t('profile.toastCreateError'));
+      }
+    }
+  });
+
+  const renameForm = useForm({
+    defaultValues: {
+      name: ''
+    },
+    onSubmit: async ({ value }) => {
+      const name = value.name.trim();
+      try {
+        await renameProfile(active.name, name);
+        toast.success(t('profile.toastRenameSuccess'));
+        setIsRenaming(false);
+        renameForm.reset();
+      } catch (err) {
+        console.error(err);
+        toast.error(t('profile.toastRenameError'));
+      }
+    }
+  });
+
+  const duplicateForm = useForm({
+    defaultValues: {
+      name: ''
+    },
+    onSubmit: async ({ value }) => {
+      const name = value.name.trim();
+      try {
+        await duplicateProfile(active.name, name);
+        await setActiveProfile(name);
+        toast.success(t('profile.toastDuplicateSuccess'));
+        setIsDuplicating(false);
+        duplicateForm.reset();
+      } catch (err) {
+        console.error(err);
+        toast.error(t('profile.toastDuplicateError'));
+      }
+    }
+  });
+
   const active = useMemo(
     () =>
       profiles.find((profile) => profile.name === activeProfile) ??
@@ -136,11 +201,8 @@ export function Remap() {
     label: string;
   } | null>(null);
 
-  const [newProfileName, setNewProfileName] = useState('');
   const [isCreatingProfile, setIsCreatingProfile] = useState(false);
-  const [renameValue, setRenameValue] = useState('');
   const [isRenaming, setIsRenaming] = useState(false);
-  const [duplicateValue, setDuplicateValue] = useState('');
   const [isDuplicating, setIsDuplicating] = useState(false);
 
   const [isProcessDialogOpen, setIsProcessDialogOpen] = useState(false);
@@ -441,49 +503,6 @@ export function Remap() {
     });
   };
 
-  const onCreateProfile = async () => {
-    const name = newProfileName.trim();
-    if (!name) return;
-    try {
-      await createProfile(name);
-      toast.success(t('profile.toastCreateSuccess'));
-      setNewProfileName('');
-      setIsCreatingProfile(false);
-    } catch (err) {
-      console.error(err);
-      toast.error(t('profile.toastCreateError'));
-    }
-  };
-
-  const onRenameProfile = async () => {
-    const value = renameValue.trim();
-    if (!value || value === active.name) return;
-    try {
-      await renameProfile(active.name, value);
-      toast.success(t('profile.toastRenameSuccess'));
-      setIsRenaming(false);
-      setRenameValue('');
-    } catch (err) {
-      console.error(err);
-      toast.error(t('profile.toastRenameError'));
-    }
-  };
-
-  const onDuplicateProfile = async () => {
-    const value = duplicateValue.trim();
-    if (!value || value === active.name) return;
-    try {
-      await duplicateProfile(active.name, value);
-      await setActiveProfile(value);
-      toast.success(t('profile.toastDuplicateSuccess'));
-      setIsDuplicating(false);
-      setDuplicateValue('');
-    } catch (err) {
-      console.error(err);
-      toast.error(t('profile.toastDuplicateError'));
-    }
-  };
-
   const getProcessBadge = (exeName: string) => {
     const clean = exeName.replace(/\.exe$/i, '').trim();
     return clean ? clean[0].toUpperCase() : '?';
@@ -770,8 +789,8 @@ export function Remap() {
                     <Button
                       variant="secondary"
                       onClick={() => {
+                        renameForm.setFieldValue('name', active.name);
                         setIsRenaming(true);
-                        setRenameValue(active.name);
                       }}
                       title={t('profile.renameTitle')}
                       className="h-9 w-9 p-0 flex items-center justify-center rounded-xl"
@@ -783,7 +802,10 @@ export function Remap() {
                     <Button
                       variant="secondary"
                       onClick={() => {
-                        setDuplicateValue(`${active.name} Copy`);
+                        duplicateForm.setFieldValue(
+                          'name',
+                          `${active.name} Copy`
+                        );
                         setIsDuplicating(true);
                       }}
                       title={t('profile.duplicate')}
@@ -805,12 +827,13 @@ export function Remap() {
                   </div>
                 </div>
 
-
-
                 {/* Create Profile Trigger Button */}
                 <Button
                   variant="secondary"
-                  onClick={() => setIsCreatingProfile(true)}
+                  onClick={() => {
+                    createForm.setFieldValue('name', '');
+                    setIsCreatingProfile(true);
+                  }}
                   className="w-full justify-center gap-1 py-2 text-xs border-dashed border-border-main/70 hover:border-zinc-500 hover:bg-zinc-900/10 text-zinc-300"
                 >
                   <Plus className="w-3.5 h-3.5" />
@@ -988,7 +1011,6 @@ export function Remap() {
             onChange={(e) => setProcessQuery(e.target.value)}
             placeholder={t('process.searchPlaceholder')}
             leftIcon={<Search className="w-4 h-4 text-zinc-500" />}
-            containerClassName="focus-within:border-primary-border/60"
           />
 
           <div className="max-h-72 overflow-y-auto space-y-2 pr-1 scrollbar-thin">
@@ -1011,7 +1033,7 @@ export function Remap() {
                     key={`${proc.exe_name}-${proc.pid}`}
                     className="flex items-center justify-between rounded-xl border border-border-main/40 hover:border-border-hover px-4 py-2.5 bg-zinc-950/20 hover:bg-zinc-950/40 transition duration-150"
                   >
-                      <div className="min-w-0 flex items-center gap-3">
+                    <div className="min-w-0 flex items-center gap-3">
                       <div className="w-7 h-7 rounded-lg bg-zinc-900 border border-border-main/60 flex items-center justify-center text-[10px] font-bold text-zinc-200">
                         {getProcessBadge(proc.exe_name)}
                       </div>
@@ -1055,7 +1077,7 @@ export function Remap() {
         open={isCreatingProfile}
         onClose={() => {
           setIsCreatingProfile(false);
-          setNewProfileName('');
+          createForm.reset();
         }}
         title={t('profile.createTitle')}
         className="max-w-md border-border-main/70"
@@ -1063,42 +1085,69 @@ export function Remap() {
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            onCreateProfile();
+            e.stopPropagation();
+            createForm.handleSubmit();
           }}
-          className="space-y-4"
+          className="space-y-6"
         >
-          <div className="space-y-1.5">
-            <label className="text-xs text-zinc-400">
-              {t('profile.createPlaceholder')}
-            </label>
-            <Input
-              value={newProfileName}
-              onChange={(e) => setNewProfileName(e.target.value)}
-              placeholder={t('profile.createPlaceholder')}
-              autoFocus
-            />
-          </div>
+          <createForm.Field
+            name="name"
+            validators={{
+              onChange: zodValidate(
+                z
+                  .string()
+                  .trim()
+                  .min(1, t('profile.validationRequired'))
+                  .refine(
+                    (val) =>
+                      !profiles.some(
+                        (p) => p.name.toLowerCase() === val.toLowerCase()
+                      ),
+                    t('profile.validationExists')
+                  )
+              )
+            }}
+            children={(field) => (
+              <FormFieldProvider field={field}>
+                <FormItem>
+                  <FormLabel>{t('profile.createPlaceholder')}</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder={t('profile.createPlaceholder')}
+                      autoFocus
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              </FormFieldProvider>
+            )}
+          />
 
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="flex justify-end gap-2 pt-4">
             <Button
               type="button"
               variant="secondary"
               onClick={() => {
                 setIsCreatingProfile(false);
-                setNewProfileName('');
+                createForm.reset();
               }}
               className="px-4 py-2 text-xs"
             >
               {t('profile.cancel')}
             </Button>
-            <Button
-              type="submit"
-              variant="primary"
-              disabled={!newProfileName.trim()}
-              className="px-4 py-2 text-xs"
-            >
-              {t('profile.create')}
-            </Button>
+            <createForm.Subscribe
+              selector={(state) => [state.canSubmit, state.isSubmitting]}
+              children={([canSubmit, isSubmitting]) => (
+                <Button
+                  type="submit"
+                  variant="primary"
+                  disabled={!canSubmit || isSubmitting}
+                  className="px-4 py-2 text-xs"
+                >
+                  {isSubmitting ? '...' : t('profile.create')}
+                </Button>
+              )}
+            />
           </div>
         </form>
       </Dialog>
@@ -1107,7 +1156,7 @@ export function Remap() {
         open={isRenaming}
         onClose={() => {
           setIsRenaming(false);
-          setRenameValue('');
+          renameForm.reset();
         }}
         title={t('profile.renameTitle')}
         className="max-w-md border-border-main/70"
@@ -1115,42 +1164,74 @@ export function Remap() {
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            onRenameProfile();
+            e.stopPropagation();
+            renameForm.handleSubmit();
           }}
-          className="space-y-4"
+          className="space-y-6"
         >
-          <div className="space-y-1.5">
-            <label className="text-xs text-zinc-400">
-              {t('profile.renamePlaceholder')}
-            </label>
-            <Input
-              value={renameValue}
-              onChange={(e) => setRenameValue(e.target.value)}
-              placeholder={t('profile.renamePlaceholder')}
-              autoFocus
-            />
-          </div>
+          <renameForm.Field
+            name="name"
+            validators={{
+              onChange: zodValidate(
+                z
+                  .string()
+                  .trim()
+                  .min(1, t('profile.validationRequired'))
+                  .refine(
+                    (val) =>
+                      val === active.name ||
+                      !profiles.some(
+                        (p) => p.name.toLowerCase() === val.toLowerCase()
+                      ),
+                    t('profile.validationExists')
+                  )
+                  .refine(
+                    (val) => val !== active.name,
+                    t('profile.validationSameName')
+                  )
+              )
+            }}
+            children={(field) => (
+              <FormFieldProvider field={field}>
+                <FormItem>
+                  <FormLabel>{t('profile.renamePlaceholder')}</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder={t('profile.renamePlaceholder')}
+                      autoFocus
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              </FormFieldProvider>
+            )}
+          />
 
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="flex justify-end gap-2 pt-4">
             <Button
               type="button"
               variant="secondary"
               onClick={() => {
                 setIsRenaming(false);
-                setRenameValue('');
+                renameForm.reset();
               }}
               className="px-4 py-2 text-xs"
             >
               {t('profile.cancel')}
             </Button>
-            <Button
-              type="submit"
-              variant="primary"
-              disabled={!renameValue.trim() || renameValue.trim() === active.name}
-              className="px-4 py-2 text-xs"
-            >
-              {t('profile.save')}
-            </Button>
+            <renameForm.Subscribe
+              selector={(state) => [state.canSubmit, state.isSubmitting]}
+              children={([canSubmit, isSubmitting]) => (
+                <Button
+                  type="submit"
+                  variant="primary"
+                  disabled={!canSubmit || isSubmitting}
+                  className="px-4 py-2 text-xs"
+                >
+                  {isSubmitting ? '...' : t('profile.save')}
+                </Button>
+              )}
+            />
           </div>
         </form>
       </Dialog>
@@ -1159,7 +1240,7 @@ export function Remap() {
         open={isDuplicating}
         onClose={() => {
           setIsDuplicating(false);
-          setDuplicateValue('');
+          duplicateForm.reset();
         }}
         title={t('profile.duplicateTitle')}
         className="max-w-md border-border-main/70"
@@ -1167,42 +1248,69 @@ export function Remap() {
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            onDuplicateProfile();
+            e.stopPropagation();
+            duplicateForm.handleSubmit();
           }}
-          className="space-y-4"
+          className="space-y-6"
         >
-          <div className="space-y-1.5">
-            <label className="text-xs text-zinc-400">
-              {t('profile.duplicatePlaceholder')}
-            </label>
-            <Input
-              value={duplicateValue}
-              onChange={(e) => setDuplicateValue(e.target.value)}
-              placeholder={t('profile.duplicatePlaceholder')}
-              autoFocus
-            />
-          </div>
+          <duplicateForm.Field
+            name="name"
+            validators={{
+              onChange: zodValidate(
+                z
+                  .string()
+                  .trim()
+                  .min(1, t('profile.validationRequired'))
+                  .refine(
+                    (val) =>
+                      !profiles.some(
+                        (p) => p.name.toLowerCase() === val.toLowerCase()
+                      ),
+                    t('profile.validationExists')
+                  )
+              )
+            }}
+            children={(field) => (
+              <FormFieldProvider field={field}>
+                <FormItem>
+                  <FormLabel>{t('profile.duplicatePlaceholder')}</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder={t('profile.duplicatePlaceholder')}
+                      autoFocus
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              </FormFieldProvider>
+            )}
+          />
 
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="flex justify-end gap-2 pt-4">
             <Button
               type="button"
               variant="secondary"
               onClick={() => {
                 setIsDuplicating(false);
-                setDuplicateValue('');
+                duplicateForm.reset();
               }}
               className="px-4 py-2 text-xs"
             >
               {t('profile.cancel')}
             </Button>
-            <Button
-              type="submit"
-              variant="primary"
-              disabled={!duplicateValue.trim() || profiles.some(p => p.name.toLowerCase() === duplicateValue.trim().toLowerCase())}
-              className="px-4 py-2 text-xs"
-            >
-              {t('profile.duplicate')}
-            </Button>
+            <duplicateForm.Subscribe
+              selector={(state) => [state.canSubmit, state.isSubmitting]}
+              children={([canSubmit, isSubmitting]) => (
+                <Button
+                  type="submit"
+                  variant="primary"
+                  disabled={!canSubmit || isSubmitting}
+                  className="px-4 py-2 text-xs"
+                >
+                  {isSubmitting ? '...' : t('profile.duplicate')}
+                </Button>
+              )}
+            />
           </div>
         </form>
       </Dialog>

@@ -58,7 +58,10 @@
     "renamePromptTitle": "Delete Profile",
     "renamePromptDescPrefix": "Are you sure you want to delete the profile",
     "renamePromptDescSuffix": "? This will permanently remove all configured key bindings.",
-    "deleteConfirm": "Delete"
+    "deleteConfirm": "Delete",
+    "validationRequired": "Profile name is required",
+    "validationExists": "Profile name already exists",
+    "validationSameName": "Profile name is unchanged"
   },
   "targets": {
     "title": "Target Applications",

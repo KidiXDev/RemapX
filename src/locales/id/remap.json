@@ -58,7 +58,10 @@
     "renamePromptTitle": "Hapus Profil",
     "renamePromptDescPrefix": "Yakin ingin menghapus profil",
     "renamePromptDescSuffix": "? Semua key binding di profil ini akan dihapus secara permanen.",
-    "deleteConfirm": "Hapus"
+    "deleteConfirm": "Hapus",
+    "validationRequired": "Nama profil wajib diisi",
+    "validationExists": "Nama profil sudah ada",
+    "validationSameName": "Nama profil tidak berubah"
   },
   "targets": {
     "title": "Target App",
