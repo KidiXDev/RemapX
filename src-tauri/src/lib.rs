@@ -719,7 +719,16 @@ fn open_main_devtools(app: AppHandle) -> Result<(), String> {
     let window = app
         .get_webview_window("main")
         .ok_or_else(|| "Main window not found".to_string())?;
+
+    #[cfg(not(debug_assertions))]
+    {
+        let _ = window;
+        return Err("Devtools are only available in debug builds".to_string());
+    }
+
+    #[cfg(debug_assertions)]
     window.open_devtools();
+
     Ok(())
 }
 

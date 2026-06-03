@@ -16,7 +16,7 @@
   },
   "developerMode": {
     "label": "Developer Mode",
-    "description": "Enable verbose diagnostic logs. In production builds, F12 opens devtools when this is enabled."
+    "description": "Enable verbose diagnostic logs."
   },
   "languageCardTitle": "Localization",
   "languageLabel": "Display Language",

@@ -16,7 +16,7 @@
   },
   "developerMode": {
     "label": "Developer Mode",
-    "description": "Aktifkan log diagnostics detail. Pada build production, F12 akan membuka devtools saat opsi ini aktif."
+    "description": "Aktifkan log diagnostics detail."
   },
   "languageCardTitle": "Localization",
   "languageLabel": "Display Language",
