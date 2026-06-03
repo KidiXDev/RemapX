@@ -15,7 +15,7 @@ export const Button: React.FC<ButtonProps> = ({
   return (
     <button
       className={cn(
-        'flex items-center justify-center gap-1.5 transition-all duration-300 rounded-xl active:scale-[0.98]',
+        'flex items-center justify-center gap-1.5 transition-all duration-300 rounded-xl active:scale-[0.98] cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100',
         variant === 'primary' &&
           'px-4 py-2 text-xs font-bold bg-primary hover:bg-primary-hover text-zinc-950 shadow-lg shadow-primary/10',
         variant === 'secondary' &&
