@@ -25,7 +25,7 @@
     "deleteMapping": "Hapus Mapping"
   },
   "diagnostics": {
-    "streamTitle": "DAEMON_LOG_STREAM",
+    "streamTitle": "LOG",
     "clearLogs": "Clear Logs",
     "empty": "Belum ada log diagnostics. Tekan tombol gamepad untuk test."
   },

@@ -310,6 +310,7 @@ export function Remap() {
                   onControlSelect={(buttonId, label) => {
                     setRecordingTarget({ buttonId, label });
                   }}
+                  engineRunning={engineRunning}
                 />
               </div>
 
