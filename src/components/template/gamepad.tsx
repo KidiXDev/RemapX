@@ -306,6 +306,7 @@ export function Gamepad({
         <g
           className="cursor-pointer g-element"
           onClick={() => handleControlClick(6, 'Left Trigger')}
+          transform="rotate(10 31.0 14.2) translate(0, -3.0)"
         >
           {/* Base trigger path */}
           <path
@@ -338,6 +339,7 @@ export function Gamepad({
         <g
           className="cursor-pointer g-element"
           onClick={() => handleControlClick(7, 'Right Trigger')}
+          transform="rotate(-10 69.0 14.2) translate(0, -3.0)"
         >
           <path
             d="M 72.0 11.5 C 72.0 11.5, 72.0 4.5, 73.0 4.0 C 74.0 3.5, 76.5 3.5, 77.5 4.0 C 78.5 4.5, 78.5 11.5, 78.5 11.5 Z"
@@ -371,6 +373,7 @@ export function Gamepad({
         <g
           className="cursor-pointer g-element"
           onClick={() => handleControlClick(4, 'Left Bumper')}
+          transform="rotate(10 31.0 14.2)"
         >
           <path
             d="M 18.0 14.5 C 22.0 13.5, 27.0 13.5, 31.0 14.2 L 31.5 11.2 C 27.0 10.2, 21.0 10.2, 17.0 11.8 Z"
@@ -391,6 +394,7 @@ export function Gamepad({
         <g
           className="cursor-pointer g-element"
           onClick={() => handleControlClick(5, 'Right Bumper')}
+          transform="rotate(-10 69.0 14.2)"
         >
           <path
             d="M 82.0 14.5 C 78.0 13.5, 73.0 13.5, 69.0 14.2 L 68.5 11.2 C 73.0 10.2, 79.0 10.2, 83.0 11.8 Z"
