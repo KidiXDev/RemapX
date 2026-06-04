@@ -93,33 +93,33 @@ export function MappingsList({
           </p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {/* Table Header */}
-          <div className="grid grid-cols-12 text-xs font-bold text-zinc-500 uppercase tracking-widest px-4 mb-1">
-            <div className="col-span-4">
+          <div className="grid grid-cols-12 text-xs font-bold text-zinc-500 uppercase tracking-widest px-5 mb-2.5">
+            <div className="col-span-3">
               {t('bindings.headerGamepadControl')}
             </div>
             <div className="col-span-1 text-center"></div>
-            <div className="col-span-4">
+            <div className="col-span-3">
               {t('bindings.headerMappedKey')}
             </div>
-            <div className="col-span-2">
+            <div className="col-span-3">
               {t('bindings.headerType')}
             </div>
-            <div className="col-span-1 text-right">
+            <div className="col-span-2 text-right">
               {t('bindings.headerAction')}
             </div>
           </div>
 
           {/* Mappings Rows */}
-          <div className="space-y-1.5">
+          <div className="space-y-2.5">
             {filteredMappings.map((map) => (
               <div
                 key={`${profileName}-${map.button_id}`}
-                className="grid grid-cols-12 items-center bg-zinc-900/20 hover:bg-zinc-900/40 border border-border-main/40 hover:border-border-hover rounded-xl px-4 py-2.5 transition duration-150 group/row"
+                className="grid grid-cols-12 items-center bg-zinc-900/25 hover:bg-zinc-900/45 border border-border-main/30 hover:border-border-hover rounded-xl px-5 py-3 transition duration-150 group/row shadow-sm"
               >
                 {/* Gamepad Input */}
-                <div className="col-span-4 flex items-center">
+                <div className="col-span-3 flex items-center">
                   <span className="inline-flex items-center justify-center min-w-10 h-7 px-2.5 rounded-full bg-primary-bg border border-primary-border/80 text-primary-text font-bold text-xs uppercase shadow-sm">
                     {buttonLabelMap[map.button_id] ||
                       `Button ${map.button_id}`}
@@ -132,21 +132,21 @@ export function MappingsList({
                 </div>
 
                 {/* Mapped Keyboard Keycap */}
-                <div className="col-span-4 flex items-center">
+                <div className="col-span-3 flex items-center">
                   <kbd className="min-w-[32px] h-7 px-2.5 flex items-center justify-center rounded-lg bg-zinc-950 border border-zinc-700 text-zinc-100 text-xs font-mono font-bold shadow-md shadow-black/60 uppercase">
                     {map.key_str}
                   </kbd>
                 </div>
 
                 {/* Mapping Type Tag */}
-                <div className="col-span-2">
+                <div className="col-span-3">
                   <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-zinc-950 text-zinc-400 border border-border-main/40 uppercase tracking-wider">
                     {map.mapping_type}
                   </span>
                 </div>
 
                 {/* Action Column */}
-                <div className="col-span-1 text-right">
+                <div className="col-span-2 text-right">
                   <button
                     onClick={() => onDeleteMapping(map.button_id)}
                     className="text-zinc-500 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10 transition-all active:scale-95 cursor-pointer"

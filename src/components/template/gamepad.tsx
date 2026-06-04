@@ -202,8 +202,9 @@ export function Gamepad({
         />
         <text
           x={x}
-          y={y + 1.15}
+          y={y}
           textAnchor="middle"
+          dominantBaseline="central"
           fontSize="2.1"
           fontWeight="bold"
           fill="var(--primary-text)"

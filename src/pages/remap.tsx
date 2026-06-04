@@ -12,20 +12,22 @@ import { MappingsList } from '@/components/template/mappings-list';
 import { ProcessDialog } from '@/components/template/process-dialog';
 import { ProfileDialogs } from '@/components/template/profile-dialogs';
 import { useConnectedGamepads } from '@/hooks/use-connected-gamepads';
-import { useDelayedLoading } from '@/hooks/use-delayed-loading';
 import { useDisclosure } from '@/hooks/use-disclosure';
 import { Mapping, Profile, useSettingsStore } from '@/hooks/use-settings-store';
 import { cn } from '@/lib/utils';
 import { invoke } from '@tauri-apps/api/core';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   Activity,
+  ChevronDown,
   Copy,
-  Gamepad as GamepadIcon,
+  MoreVertical,
   Pause,
   Pencil,
   Play,
   Plus,
   RefreshCw,
+  Sliders,
   Trash2,
   X
 } from 'lucide-react';
@@ -97,8 +99,6 @@ export function Remap() {
     refresh: loadConnectedGamepads
   } = useConnectedGamepads(1500);
 
-  const showGamepadLoading = useDelayedLoading(isLoadingGamepads, 150);
-
   const [recordingTarget, setRecordingTarget] = useState<{
     buttonId: number;
     label: string;
@@ -108,6 +108,31 @@ export function Remap() {
   const renameDialog = useDisclosure(false);
   const duplicateDialog = useDisclosure(false);
   const processDialog = useDisclosure(false);
+
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const settingsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+      if (
+        settingsRef.current &&
+        !settingsRef.current.contains(event.target as Node)
+      ) {
+        setSettingsOpen(false);
+      }
+    }
+    if (menuOpen || settingsOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [menuOpen, settingsOpen]);
 
   const targetList = useMemo(
     () =>
@@ -276,11 +301,269 @@ export function Remap() {
   return (
     <>
       <ContentLayout title={t('title')}>
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* LEFT/CENTER WORKSPACE COLUMN: Gamepad Canvas & Tabs */}
-          <div className="lg:col-span-7 space-y-6 flex flex-col">
+        <div className="flex flex-col">
+          {/* Top Control Panel */}
+          <Card className="flex flex-col sm:flex-row sm:items-center justify-between p-2.5 px-4 border-border-main/70 bg-bg-card mb-6 overflow-visible space-y-3 sm:space-y-0 gap-3 min-h-[56px]">
+            {/* Left: Profile Selector, Actions, & Settings Popover */}
+            <div className="flex flex-wrap items-center gap-3 shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest shrink-0">
+                  Profile
+                </span>
+                <Select
+                  value={activeProfile}
+                  onChange={setActiveProfile}
+                  options={profiles.map((profile) => ({
+                    value: profile.name,
+                    label: profile.name
+                  }))}
+                  className="w-48"
+                />
+              </div>
+
+              {/* More Actions Dropdown Menu */}
+              <div ref={menuRef} className="relative">
+                <Button
+                  variant="secondary"
+                  onClick={() => setMenuOpen(!menuOpen)}
+                  title={t('profile.title')}
+                  className={cn(
+                    'h-9 w-9 p-0 flex items-center justify-center rounded-xl border transition-all duration-200',
+                    menuOpen
+                      ? 'bg-zinc-800 text-white border-zinc-500'
+                      : 'border-border-main hover:border-border-hover'
+                  )}
+                >
+                  <MoreVertical className="w-4 h-4 text-zinc-400" />
+                </Button>
+
+                <AnimatePresence>
+                  {menuOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 4, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 4, scale: 0.95 }}
+                      transition={{ duration: 0.12, ease: 'easeOut' }}
+                      className="absolute left-0 z-50 w-52 mt-1.5 rounded-xl border border-border-main bg-zinc-950 shadow-2xl py-1 overflow-hidden"
+                    >
+                      {/* Create New Profile */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMenuOpen(false);
+                          createDialog.onOpen();
+                        }}
+                        className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-xs text-left text-zinc-300 hover:bg-zinc-900/60 hover:text-zinc-100 transition cursor-pointer"
+                      >
+                        <Plus className="w-3.5 h-3.5 text-zinc-400" />
+                        <span>{t('profile.createTrigger')}</span>
+                      </button>
+
+                      {/* Rename Profile */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMenuOpen(false);
+                          renameDialog.onOpen();
+                        }}
+                        className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-xs text-left text-zinc-300 hover:bg-zinc-900/60 hover:text-zinc-100 transition cursor-pointer"
+                      >
+                        <Pencil className="w-3.5 h-3.5 text-zinc-400" />
+                        <span>{t('profile.renameTitle')}</span>
+                      </button>
+
+                      {/* Duplicate Profile */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMenuOpen(false);
+                          duplicateDialog.onOpen();
+                        }}
+                        className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-xs text-left text-zinc-300 hover:bg-zinc-900/60 hover:text-zinc-100 transition cursor-pointer"
+                      >
+                        <Copy className="w-3.5 h-3.5 text-zinc-400" />
+                        <span>{t('profile.duplicate')}</span>
+                      </button>
+
+                      <div className="h-px bg-border-main/55 my-1" />
+
+                      {/* Delete Profile */}
+                      <button
+                        type="button"
+                        disabled={profiles.length <= 1}
+                        onClick={() => {
+                          setMenuOpen(false);
+                          handleDeleteProfile();
+                        }}
+                        className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-xs text-left text-red-400/90 hover:bg-red-950/20 hover:text-red-300 disabled:opacity-50 disabled:pointer-events-none transition cursor-pointer font-semibold"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-red-400/70" />
+                        <span>{t('profile.deleteConfirm')}</span>
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              <div className="w-px h-5 bg-border-main/50 mx-1 shrink-0 hidden sm:block" />
+
+              {/* Tuning & Targets Settings popover */}
+              <div ref={settingsRef} className="relative shrink-0">
+                <Button
+                  variant="secondary"
+                  onClick={() => setSettingsOpen(!settingsOpen)}
+                  className={cn(
+                    'h-9 px-3.5 flex items-center gap-2 rounded-xl border transition-all duration-200 text-xs font-semibold w-full sm:w-auto',
+                    settingsOpen
+                      ? 'bg-zinc-800 text-white border-zinc-500'
+                      : 'border-border-main hover:border-border-hover text-zinc-300'
+                  )}
+                >
+                  <Sliders className="w-3.5 h-3.5 text-zinc-400" />
+                  <span>Configure Settings</span>
+                  <ChevronDown
+                    className={cn(
+                      'w-3 h-3 text-zinc-400 transition-transform duration-200 ml-0.5',
+                      settingsOpen && 'rotate-180'
+                    )}
+                  />
+                </Button>
+
+                <AnimatePresence>
+                  {settingsOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                      transition={{ duration: 0.15, ease: 'easeOut' }}
+                      className="absolute left-0 z-50 w-[350px] mt-2 rounded-2xl border border-border-main bg-zinc-950 shadow-2xl p-5 space-y-5"
+                    >
+                      {/* Debounce & Deadzone Sliders */}
+                      <div className="space-y-4">
+                        <h4 className="text-xs font-bold text-zinc-300 uppercase tracking-wider border-b border-border-main/30 pb-2">
+                          Tuning
+                        </h4>
+                        <Slider
+                          label={t('profile.debounceLabel')}
+                          value={active.debounce_ms}
+                          onChange={async (val) => {
+                            await saveProfile({ ...active, debounce_ms: val });
+                          }}
+                          min={0}
+                          max={100}
+                          suffix="ms"
+                          description={t('profile.debounceDesc')}
+                        />
+                        <Slider
+                          label={t('profile.deadzoneLabel')}
+                          value={Math.round(
+                            (active.axis_deadzone ?? 0.0) * 100
+                          )}
+                          onChange={async (val) => {
+                            await saveProfile({
+                              ...active,
+                              axis_deadzone: val / 100
+                            });
+                          }}
+                          min={0}
+                          max={50}
+                          suffix="%"
+                          description={t('profile.deadzoneDesc')}
+                        />
+                      </div>
+
+                      {/* Target Applications list */}
+                      <div className="space-y-3.5 pt-1">
+                        <div className="flex items-center justify-between border-b border-border-main/30 pb-2">
+                          <h4 className="text-xs font-bold text-zinc-300 uppercase tracking-wider">
+                            {t('targets.title')}
+                          </h4>
+                          <Button
+                            variant="secondary"
+                            onClick={processDialog.onOpen}
+                            className="py-1 px-2 h-6.5 rounded-lg text-[10px] font-bold border border-border-main hover:border-border-hover shrink-0"
+                          >
+                            <Plus className="w-3 h-3 text-zinc-400 mr-1" />
+                            <span>{t('targets.browseApp')}</span>
+                          </Button>
+                        </div>
+
+                        {targetList.length === 0 ? (
+                          <div className="p-3 border border-dashed border-border-main/40 rounded-xl bg-zinc-900/20 text-center">
+                            <p className="text-[10px] text-zinc-500 font-semibold leading-relaxed">
+                              {t('targets.globalTitle')}
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto pr-1 scrollbar-thin">
+                            {targetList.map((target) => (
+                              <span
+                                key={target}
+                                className="inline-flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-lg text-[10px] font-semibold bg-zinc-900 border border-border-main/50 text-zinc-300 hover:border-zinc-500 transition duration-150"
+                              >
+                                <span className="font-mono text-[10px]">
+                                  {target}
+                                </span>
+                                <button
+                                  onClick={() => onRemoveTarget(target)}
+                                  className="text-zinc-500 hover:text-red-400 p-0.5 rounded transition cursor-pointer"
+                                  title={`${t('targets.remove')} ${target}`}
+                                >
+                                  <X className="w-2.5 h-2.5" />
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+
+            {/* Right: Controller Hardware Connection Status */}
+            <div className="flex items-center gap-2 border border-border-main/40 bg-zinc-950/20 px-3 py-1 h-9 rounded-xl shrink-0 self-start sm:self-auto">
+              <div className="relative flex items-center">
+                {connectedGamepads.length > 0 ? (
+                  <span className="flex h-2 w-2 relative mr-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                ) : (
+                  <span className="h-2 w-2 rounded-full bg-zinc-600 mr-2" />
+                )}
+                <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider mr-1.5">
+                  Device:
+                </span>
+                <span className="text-xs font-semibold text-zinc-200 truncate max-w-[160px]">
+                  {connectedGamepads.length === 0
+                    ? t('hardware.emptyTitle')
+                    : connectedGamepads[0].name}
+                </span>
+              </div>
+
+              <div className="w-px h-3.5 bg-border-main/50 mx-1 shrink-0" />
+
+              <button
+                onClick={() => {
+                  void loadConnectedGamepads();
+                }}
+                disabled={isLoadingGamepads}
+                className="text-zinc-500 hover:text-zinc-300 transition disabled:opacity-50 cursor-pointer shrink-0 p-0.5"
+                title={t('hardware.scan')}
+              >
+                <RefreshCw
+                  className={cn('w-3 h-3', isLoadingGamepads && 'animate-spin')}
+                />
+              </button>
+            </div>
+          </Card>
+
+          {/* Main Side-by-Side Workspace */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
             {/* Gamepad Canvas Card */}
-            <Card className="relative flex flex-col items-center justify-center p-6 border-border-main/70 bg-bg-card min-h-[380px] overflow-hidden">
+            <Card className="lg:col-span-7 relative flex flex-col items-center justify-center p-6 border-border-main/70 bg-bg-card h-[580px] overflow-hidden space-y-0">
               {/* Start/Stop Engine Button */}
               <div className="absolute top-4 right-4 z-10">
                 <Button
@@ -345,7 +628,7 @@ export function Remap() {
             </Card>
 
             {/* Key Bindings & Diagnostics Card */}
-            <Card className="overflow-hidden p-0 h-[580px] flex flex-col space-y-0 border-border-main/70">
+            <Card className="lg:col-span-5 overflow-hidden p-0 h-[580px] flex flex-col space-y-0 border-border-main/70 bg-bg-card">
               <Tabs
                 options={tabOptions}
                 activeId={activeTab}
@@ -370,231 +653,6 @@ export function Remap() {
                   <DiagnosticsTerminal />
                 )}
               </div>
-            </Card>
-          </div>
-
-          {/* RIGHT COLUMN: Profile details, target apps & connected gamepads */}
-          <div className="lg:col-span-5 space-y-6">
-            {/* Active Profile Configuration */}
-            <Card className="flex flex-col gap-4 border-border-main/70 bg-bg-card">
-              <div className="flex items-center justify-between border-b border-border-main/30">
-                <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
-                  {t('profile.title')}
-                </span>
-                <span className="text-xs font-bold text-primary-text bg-primary-bg px-2 py-0.5 rounded-full border border-primary-border">
-                  {active.name}
-                </span>
-              </div>
-
-              {/* Selector and Main Actions */}
-              <div className="space-y-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs text-zinc-400">
-                    {t('profile.selectLabel')}
-                  </label>
-                  <div className="flex gap-2">
-                    <Select
-                      value={activeProfile}
-                      onChange={setActiveProfile}
-                      options={profiles.map((profile) => ({
-                        value: profile.name,
-                        label: profile.name
-                      }))}
-                      className="flex-1"
-                    />
-
-                    {/* Rename Toggle */}
-                    <Button
-                      variant="secondary"
-                      onClick={renameDialog.onOpen}
-                      title={t('profile.renameTitle')}
-                      className="h-9 w-9 p-0 flex items-center justify-center rounded-xl"
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
-                    </Button>
-
-                    {/* Duplicate Action */}
-                    <Button
-                      variant="secondary"
-                      onClick={duplicateDialog.onOpen}
-                      title={t('profile.duplicate')}
-                      className="h-9 w-9 p-0 flex items-center justify-center rounded-xl"
-                    >
-                      <Copy className="w-3.5 h-3.5 text-zinc-400" />
-                    </Button>
-
-                    {/* Delete Action */}
-                    <Button
-                      variant="destructive"
-                      onClick={handleDeleteProfile}
-                      disabled={profiles.length <= 1}
-                      title={t('profile.renamePromptTitle')}
-                      className="h-9 w-9 p-0 flex items-center justify-center rounded-xl"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Create Profile Trigger Button */}
-                <Button
-                  variant="secondary"
-                  onClick={createDialog.onOpen}
-                  className="w-full justify-center gap-1 py-2 text-xs border-dashed border-border-main/70 hover:border-zinc-500 hover:bg-zinc-900/10 text-zinc-300"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>{t('profile.createTrigger')}</span>
-                </Button>
-              </div>
-
-              {/* Profile Slider Settings */}
-              <div className="border-t border-border-main/30 pt-4 space-y-4">
-                <Slider
-                  label={t('profile.debounceLabel')}
-                  value={active.debounce_ms}
-                  onChange={async (val) => {
-                    await saveProfile({ ...active, debounce_ms: val });
-                  }}
-                  min={0}
-                  max={100}
-                  suffix="ms"
-                  description={t('profile.debounceDesc')}
-                />
-
-                <Slider
-                  label={t('profile.deadzoneLabel')}
-                  value={Math.round((active.axis_deadzone ?? 0.0) * 100)}
-                  onChange={async (val) => {
-                    await saveProfile({ ...active, axis_deadzone: val / 100 });
-                  }}
-                  min={0}
-                  max={50}
-                  suffix="%"
-                  description={t('profile.deadzoneDesc')}
-                />
-              </div>
-            </Card>
-
-            {/* Target Applications / Auto-Switching */}
-            <Card className="flex flex-col gap-4 border-border-main/70 bg-bg-card">
-              <div className="flex items-center justify-between border-b border-border-main/30 pb-2">
-                <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
-                  {t('targets.title')}
-                </span>
-                <Button
-                  variant="secondary"
-                  onClick={processDialog.onOpen}
-                  className="py-1 px-2.5 h-7 rounded-lg text-xs font-bold"
-                >
-                  <Plus className="w-3 h-3 text-zinc-400" />
-                  <span>{t('targets.browseApp')}</span>
-                </Button>
-              </div>
-
-              {targetList.length === 0 ? (
-                <div className="p-3 border border-dashed border-border-main/40 rounded-xl bg-zinc-950/10 text-center">
-                  <p className="text-xs py-4 text-zinc-400 font-semibold">
-                    {t('targets.globalTitle')}
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <p className="text-xs text-zinc-500">
-                    {t('targets.listDesc')}
-                  </p>
-                  <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto pr-1 scrollbar-thin">
-                    {targetList.map((target) => (
-                      <span
-                        key={target}
-                        className="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 rounded-lg text-xs font-semibold bg-zinc-950 border border-border-main/50 text-zinc-300 hover:border-zinc-500 hover:text-zinc-100 transition"
-                      >
-                        <span className="font-mono text-xs">{target}</span>
-                        <button
-                          onClick={() => onRemoveTarget(target)}
-                          className="text-zinc-500 hover:text-red-400 p-0.5 rounded transition cursor-pointer"
-                          title={`${t('targets.remove')} ${target}`}
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </Card>
-
-            {/* Controller Hardware Connection Status */}
-            <Card className="flex flex-col gap-4 border-border-main/70 bg-bg-card">
-              <div className="flex items-center justify-between border-b border-border-main/30 pb-2">
-                <div className="flex items-center gap-1.5">
-                  <GamepadIcon className="w-4 h-4 text-zinc-400" />
-                  <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
-                    {t('hardware.title')}
-                  </span>
-                </div>
-                <button
-                  onClick={() => {
-                    void loadConnectedGamepads();
-                  }}
-                  disabled={isLoadingGamepads}
-                  className="text-zinc-500 hover:text-primary-text transition flex items-center gap-1 text-xs font-bold disabled:opacity-50 cursor-pointer"
-                >
-                  <RefreshCw
-                    className={`w-3 h-3 ${isLoadingGamepads ? 'animate-spin' : ''}`}
-                  />
-                  <span>{t('hardware.scan')}</span>
-                </button>
-              </div>
-
-              {showGamepadLoading ? (
-                <div className="flex items-center justify-center py-6 animate-fade-in">
-                  <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin mr-2" />
-                  <span className="text-xs text-zinc-500">
-                    {t('hardware.scanning')}
-                  </span>
-                </div>
-              ) : connectedGamepads.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-6 text-center border border-dashed border-border-main/50 rounded-xl bg-zinc-950/15">
-                  <p className="text-xs text-zinc-500 font-semibold">
-                    {t('hardware.emptyTitle')}
-                  </p>
-                  <p className="text-xs text-zinc-600 mt-1 max-w-[200px] leading-normal">
-                    {t('hardware.emptyDesc')}
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-1.5">
-                  {connectedGamepads.map((pad) => (
-                    <div
-                      key={pad.id}
-                      className="flex items-center justify-between text-xs text-zinc-300 rounded-xl border border-border-main/40 px-3 py-2 bg-zinc-950/20"
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="relative shrink-0">
-                          <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                          </span>
-                          <div className="p-1 rounded-lg bg-zinc-900 border border-border-main/60">
-                            <GamepadIcon className="w-3.5 h-3.5 text-zinc-400" />
-                          </div>
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-bold truncate pr-1 text-zinc-200">
-                            {pad.name}
-                          </p>
-                          <p className="text-xs text-zinc-500 font-mono truncate">
-                            {pad.id}
-                          </p>
-                        </div>
-                      </div>
-                      <span className="text-xs font-bold bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20 uppercase">
-                        Active
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
             </Card>
           </div>
         </div>
