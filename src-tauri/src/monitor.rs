@@ -1,7 +1,7 @@
 use crate::db;
 use std::path::Path;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 use tauri::{AppHandle, Emitter};
@@ -99,7 +99,9 @@ pub fn spawn_monitor(app: AppHandle, running: Arc<AtomicBool>) {
                             let active_is_global = db::get_profiles()
                                 .ok()
                                 .and_then(|items| {
-                                    items.into_iter().find(|profile| profile.name == current_active)
+                                    items
+                                        .into_iter()
+                                        .find(|profile| profile.name == current_active)
                                 })
                                 .map(|profile| targets_from_field(&profile.target_exe).is_empty())
                                 .unwrap_or(false);
