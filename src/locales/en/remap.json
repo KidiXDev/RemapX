@@ -78,7 +78,11 @@
     "scanning": "Scanning USB ports...",
     "emptyTitle": "No controller detected",
     "emptyDesc": "Connect a controller via USB or Bluetooth and click Scan.",
-    "active": "Active"
+    "active": "Active",
+    "toastConnectedTitle": "Controller connected",
+    "toastConnectedDescription": "{{name}} is now available.",
+    "toastDisconnectedTitle": "Controller disconnected",
+    "toastDisconnectedDescription": "{{name}} is no longer available."
   },
   "process": {
     "title": "Process Explorer",

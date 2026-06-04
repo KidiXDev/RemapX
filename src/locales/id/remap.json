@@ -78,7 +78,11 @@
     "scanning": "Scanning port USB...",
     "emptyTitle": "Tidak ada controller terdeteksi",
     "emptyDesc": "Hubungkan controller via USB atau Bluetooth, lalu klik Scan.",
-    "active": "Aktif"
+    "active": "Aktif",
+    "toastConnectedTitle": "Controller terhubung",
+    "toastConnectedDescription": "{{name}} sekarang tersedia.",
+    "toastDisconnectedTitle": "Controller terputus",
+    "toastDisconnectedDescription": "{{name}} tidak lagi tersedia."
   },
   "process": {
     "title": "Process Explorer",

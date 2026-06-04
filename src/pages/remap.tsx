@@ -29,7 +29,7 @@ import {
   Trash2,
   X
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 interface ConnectedGamepad {
@@ -89,6 +89,7 @@ export function Remap() {
 
   const [activeTab, setActiveTab] = useState<TabType>('bindings');
   const [engineRunning, setEngineRunning] = useState(false);
+  const previousGamepadsRef = useRef<ConnectedGamepad[] | null>(null);
 
   const {
     gamepads: connectedGamepads,
@@ -148,6 +149,40 @@ export function Remap() {
         )
       );
   }, [connectedGamepads, engineRunning]);
+
+  useEffect(() => {
+    if (isLoadingGamepads) return;
+
+    const previousGamepads = previousGamepadsRef.current;
+    previousGamepadsRef.current = connectedGamepads;
+
+    if (!previousGamepads) return;
+
+    const previousById = new Map(
+      previousGamepads.map((gamepad) => [gamepad.id, gamepad])
+    );
+    const currentById = new Map(
+      connectedGamepads.map((gamepad) => [gamepad.id, gamepad])
+    );
+
+    for (const gamepad of connectedGamepads) {
+      if (!previousById.has(gamepad.id)) {
+        toast.info(
+          t('hardware.toastConnectedTitle'),
+          t('hardware.toastConnectedDescription', { name: gamepad.name })
+        );
+      }
+    }
+
+    for (const gamepad of previousGamepads) {
+      if (!currentById.has(gamepad.id)) {
+        toast.warning(
+          t('hardware.toastDisconnectedTitle'),
+          t('hardware.toastDisconnectedDescription', { name: gamepad.name })
+        );
+      }
+    }
+  }, [connectedGamepads, isLoadingGamepads, t, toast]);
 
   useEffect(() => {
     if (!recordingTarget) return;
