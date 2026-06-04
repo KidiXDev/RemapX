@@ -16,7 +16,9 @@ export function ContentLayout({
   className = ''
 }: ContentLayoutProps) {
   return (
-    <div className={`container mx-auto space-y-6 animate-fade-in ${className}`}>
+    <div
+      className={`max-w-[95vw] mx-auto space-y-6 animate-fade-in ${className}`}
+    >
       {/* Header Info */}
       {(title || description || actions) && (
         <section className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
