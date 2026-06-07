@@ -12,7 +12,7 @@ interface EngineLogPayload {
 
 export function DiagnosticsTerminal() {
   const { t } = useTranslation('remap');
-  const { developerMode, setActiveProfile } = useSettingsStore();
+  const { developerMode, syncActiveProfile } = useSettingsStore();
   const [logs, setLogs] = useState<string[]>([]);
 
   useEffect(() => {
@@ -36,16 +36,14 @@ export function DiagnosticsTerminal() {
   useTauriEvent<string>(
     'active-profile-changed',
     (event) => {
-      setActiveProfile(event.payload).catch((err) => {
-        console.error('Failed to set active profile', err);
-      });
+      syncActiveProfile(event.payload);
       const time = new Date().toLocaleTimeString();
       setLogs((prev) => [
         `[${time}] ${t('logs.autoSwitchedPrefix')} ${event.payload}`,
         ...prev.slice(0, 99)
       ]);
     },
-    [t]
+    [syncActiveProfile, t]
   );
 
   useTauriEvent<{ button_id: number; pressed: boolean }>(

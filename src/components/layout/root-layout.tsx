@@ -5,6 +5,7 @@ import {
   useConfirm
 } from '@/components/providers/confirmation-provider';
 import { useSettingsStore } from '@/hooks/use-settings-store';
+import { useTauriEvent } from '@/hooks/use-tauri-event';
 import {
   cacheAvailableUpdate,
   checkForAppUpdate,
@@ -37,9 +38,18 @@ function RootLayoutContent() {
   const autoCheckUpdates = useSettingsStore((state) => state.autoCheckUpdates);
   const developerMode = useSettingsStore((state) => state.developerMode);
   const hydrate = useSettingsStore((state) => state.hydrate);
+  const syncActiveProfile = useSettingsStore((state) => state.syncActiveProfile);
   const confirm = useConfirm();
   const hasShownWindowRef = useRef(false);
   const hasRunAutoUpdateCheckRef = useRef(false);
+
+  useTauriEvent<string>(
+    'active-profile-changed',
+    (event) => {
+      syncActiveProfile(event.payload);
+    },
+    [syncActiveProfile]
+  );
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);

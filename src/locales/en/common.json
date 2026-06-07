@@ -8,5 +8,17 @@
   },
   "loading": {
     "syncingControllerState": "Syncing Controller State..."
+  },
+  "tray": {
+    "title": "Quick Controls",
+    "subtitle": "Tray menu",
+    "showWindow": "Show Main Window",
+    "startEngine": "Start Engine",
+    "stopEngine": "Stop Engine",
+    "profiles": "Switch Profile",
+    "quit": "Quit RemapX",
+    "engineRunning": "Engine running",
+    "engineStopped": "Engine stopped",
+    "currentProfile": "Current profile"
   }
 }

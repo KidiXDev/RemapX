@@ -8,5 +8,17 @@
   },
   "loading": {
     "syncingControllerState": "Sinkronisasi status controller..."
+  },
+  "tray": {
+    "title": "Kontrol Cepat",
+    "subtitle": "Menu tray",
+    "showWindow": "Tampilkan Window Utama",
+    "startEngine": "Start Engine",
+    "stopEngine": "Stop Engine",
+    "profiles": "Ganti Profil",
+    "quit": "Keluar dari RemapX",
+    "engineRunning": "Engine aktif",
+    "engineStopped": "Engine berhenti",
+    "currentProfile": "Profil aktif"
   }
 }

@@ -50,6 +50,7 @@ interface SettingsState {
   setTheme: (theme: ThemeType) => Promise<void>;
   setLocale: (locale: LocaleType) => Promise<void>;
   setActiveProfile: (name: string) => Promise<void>;
+  syncActiveProfile: (name: string) => void;
   saveProfile: (profile: Profile) => Promise<void>;
   createProfile: (name: string) => Promise<void>;
   renameProfile: (oldName: string, newName: string) => Promise<void>;
@@ -187,6 +188,10 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   setActiveProfile: async (name) => {
     set({ activeProfile: name });
     await invoke('set_active_profile', { name });
+  },
+
+  syncActiveProfile: (name) => {
+    set({ activeProfile: name });
   },
 
   saveProfile: async (profile) => {

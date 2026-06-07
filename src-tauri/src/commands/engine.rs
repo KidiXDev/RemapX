@@ -24,6 +24,10 @@ static LAST_TRIGGER_TIMES: OnceLock<Mutex<HashMap<i64, Instant>>> = OnceLock::ne
 const LEFT_STICK_MOTION_ID: i64 = 100;
 const RIGHT_STICK_MOTION_ID: i64 = 101;
 
+fn emit_engine_state(app: &AppHandle, running: bool) {
+    let _ = app.emit("engine-state-changed", running);
+}
+
 #[derive(Clone, Default)]
 struct AnalogKeyState {
     up: Option<String>,
@@ -563,6 +567,8 @@ pub fn start_engine(app: AppHandle, engine: State<'_, EngineState>) -> Result<()
         return Ok(());
     }
 
+    emit_engine_state(&app, true);
+
     let running = Arc::clone(&engine.running);
     let app_handle = app.clone();
 
@@ -862,9 +868,15 @@ pub fn start_engine(app: AppHandle, engine: State<'_, EngineState>) -> Result<()
 }
 
 #[tauri::command]
-pub fn stop_engine(engine: State<'_, EngineState>) -> Result<(), String> {
+pub fn stop_engine(app: AppHandle, engine: State<'_, EngineState>) -> Result<(), String> {
     engine.running.store(false, Ordering::SeqCst);
+    emit_engine_state(&app, false);
     Ok(())
+}
+
+#[tauri::command]
+pub fn get_engine_running(engine: State<'_, EngineState>) -> bool {
+    engine.running.load(Ordering::SeqCst)
 }
 
 #[tauri::command]

@@ -11,7 +11,6 @@ use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
-use tauri::menu::{MenuBuilder, MenuItemBuilder};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::Manager;
 use tauri::{Emitter, WindowEvent};
@@ -34,29 +33,33 @@ pub fn run() {
             running: Arc::new(AtomicBool::new(false)),
         })
         .setup(|app| {
-            let show = MenuItemBuilder::with_id("show", "Show RemapX").build(app)?;
-            let quit = MenuItemBuilder::with_id("quit", "Quit").build(app)?;
-            let tray_menu = MenuBuilder::new(app).items(&[&show, &quit]).build()?;
             let tray_builder = TrayIconBuilder::new()
-                .menu(&tray_menu)
-                .on_menu_event(|app, event| match event.id().as_ref() {
-                    "show" => {
-                        let _ = commands::window::reveal_main_window(app, false);
-                    }
-                    "quit" => {
-                        app.exit(0);
-                    }
-                    _ => {}
-                })
+                .show_menu_on_left_click(false)
                 .on_tray_icon_event(|tray, event| {
-                    if let TrayIconEvent::Click {
-                        button: MouseButton::Left,
-                        button_state: MouseButtonState::Up,
-                        ..
-                    } = event
-                    {
-                        let app = tray.app_handle();
-                        let _ = commands::window::reveal_main_window(&app, false);
+                    let app = tray.app_handle();
+
+                    match event {
+                        TrayIconEvent::Click {
+                            button: MouseButton::Left,
+                            button_state: MouseButtonState::Up,
+                            ..
+                        }
+                        | TrayIconEvent::DoubleClick {
+                            button: MouseButton::Left,
+                            ..
+                        } => {
+                            let _ = commands::window::hide_tray_popup(app);
+                            let _ = commands::window::reveal_main_window(app, false);
+                        }
+                        TrayIconEvent::Click {
+                            button: MouseButton::Right,
+                            button_state: MouseButtonState::Up,
+                            position,
+                            ..
+                        } => {
+                            let _ = commands::window::toggle_tray_popup(app, position);
+                        }
+                        _ => {}
                     }
                 });
 
@@ -67,6 +70,7 @@ pub fn run() {
             };
 
             let _tray = tray_builder.build(app)?;
+            let _ = commands::window::ensure_tray_popup_window(&app.handle());
 
             let handle = app.handle();
             if let Some(main) = app.get_webview_window("main") {
@@ -104,9 +108,11 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::engine::start_engine,
             commands::engine::stop_engine,
+            commands::engine::get_engine_running,
             commands::engine::trigger_button_action,
             commands::window::show_main_window,
             commands::window::open_main_devtools,
+            commands::window::quit_app,
             commands::system::get_runtime_info,
             commands::settings::set_run_on_boot,
             commands::profile::get_profiles,

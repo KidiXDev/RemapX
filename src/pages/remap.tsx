@@ -15,6 +15,7 @@ import { ProfileDialogs } from '@/components/template/profile-dialogs';
 import { useConnectedGamepads } from '@/hooks/use-connected-gamepads';
 import { useDisclosure } from '@/hooks/use-disclosure';
 import { Mapping, Profile, useSettingsStore } from '@/hooks/use-settings-store';
+import { useTauriEvent } from '@/hooks/use-tauri-event';
 import {
   decodeAnalogKeyboardConfig,
   decodeMouseMoveConfig,
@@ -270,6 +271,13 @@ export function Remap() {
   useEffect(() => {
     const initEngine = async () => {
       try {
+        const running = await invoke<boolean>('get_engine_running');
+        setEngineRunning(running);
+
+        if (running) {
+          return;
+        }
+
         const pads = await invoke<ConnectedGamepad[]>('get_connected_gamepads');
         if (pads.length === 0) return;
         await invoke('start_engine');
@@ -285,6 +293,14 @@ export function Remap() {
       invoke('stop_engine').catch(() => {});
     };
   }, []);
+
+  useTauriEvent<boolean>(
+    'engine-state-changed',
+    (event) => {
+      setEngineRunning(event.payload);
+    },
+    []
+  );
 
   useEffect(() => {
     if (connectedGamepads.length > 0 || !engineRunning) return;

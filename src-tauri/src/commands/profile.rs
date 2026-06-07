@@ -1,4 +1,11 @@
 use crate::db::{self, Profile};
+use tauri::{AppHandle, Emitter};
+
+fn set_active_profile_and_emit(app: &AppHandle, name: &str) -> Result<(), String> {
+    db::save_setting("activeProfile", name)?;
+    let _ = app.emit("active-profile-changed", name);
+    Ok(())
+}
 
 #[tauri::command]
 pub fn get_profiles() -> Result<Vec<Profile>, String> {
@@ -33,8 +40,8 @@ pub fn duplicate_profile(name: String, new_name: String) -> Result<Profile, Stri
 }
 
 #[tauri::command]
-pub fn set_active_profile(name: String) -> Result<(), String> {
-    db::save_setting("activeProfile", &name)
+pub fn set_active_profile(app: AppHandle, name: String) -> Result<(), String> {
+    set_active_profile_and_emit(&app, &name)
 }
 
 use tauri_plugin_dialog::DialogExt;
@@ -84,4 +91,3 @@ pub fn import_profile(app_handle: tauri::AppHandle) -> Result<Option<Profile>, S
         Ok(None)
     }
 }
-
