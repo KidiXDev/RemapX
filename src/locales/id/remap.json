@@ -61,7 +61,19 @@
     "deleteConfirm": "Hapus",
     "validationRequired": "Nama profil wajib diisi",
     "validationExists": "Nama profil sudah ada",
-    "validationSameName": "Nama profil tidak berubah"
+    "validationSameName": "Nama profil tidak berubah",
+    "export": "Ekspor Profil",
+    "import": "Impor Profil",
+    "toastExportSuccess": "Profil berhasil diekspor",
+    "toastExportError": "Gagal mengekspor profil",
+    "toastExportCancelled": "Ekspor profil dibatalkan",
+    "toastImportSuccess": "Profil berhasil diimpor",
+    "toastImportError": "Gagal mengimpor profil",
+    "toastImportCancelled": "Impor profil dibatalkan",
+    "toastImportInvalid": "Struktur file profil tidak valid",
+    "importConflictTitle": "Tulis Ulang Profil?",
+    "importConflictDesc": "Profil bernama \"{{name}}\" sudah ada. Apakah Anda ingin menulis ulang (overwrite)?",
+    "importOverwrite": "Tulis Ulang"
   },
   "targets": {
     "title": "Target App",

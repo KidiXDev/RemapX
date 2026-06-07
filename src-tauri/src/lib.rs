@@ -25,6 +25,7 @@ pub fn run() {
     db::init_db().expect("failed to initialize sqlite database");
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .manage(AppRuntimeState {
             skip_initial_show: AtomicBool::new(settings_helper::should_start_hidden_on_launch()),
@@ -115,6 +116,8 @@ pub fn run() {
             commands::profile::delete_profile,
             commands::profile::duplicate_profile,
             commands::profile::set_active_profile,
+            commands::profile::export_profile,
+            commands::profile::import_profile,
             commands::settings::get_settings,
             commands::settings::save_setting,
             commands::system::get_connected_gamepads,

@@ -7,7 +7,9 @@ use std::thread;
 #[cfg(target_os = "windows")]
 use tauri::AppHandle;
 #[cfg(target_os = "windows")]
-use windows_sys::Win32::Foundation::{CloseHandle, GetLastError, ERROR_ALREADY_EXISTS, WAIT_OBJECT_0};
+use windows_sys::Win32::Foundation::{
+    CloseHandle, GetLastError, ERROR_ALREADY_EXISTS, WAIT_OBJECT_0,
+};
 #[cfg(target_os = "windows")]
 use windows_sys::Win32::System::Threading::{
     CreateEventW, CreateMutexW, OpenEventW, SetEvent, WaitForSingleObject,

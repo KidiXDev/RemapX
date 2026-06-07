@@ -61,7 +61,19 @@
     "deleteConfirm": "Delete",
     "validationRequired": "Profile name is required",
     "validationExists": "Profile name already exists",
-    "validationSameName": "Profile name is unchanged"
+    "validationSameName": "Profile name is unchanged",
+    "export": "Export Profile",
+    "import": "Import Profile",
+    "toastExportSuccess": "Profile exported successfully",
+    "toastExportError": "Failed to export profile",
+    "toastExportCancelled": "Profile export cancelled",
+    "toastImportSuccess": "Profile imported successfully",
+    "toastImportError": "Failed to import profile",
+    "toastImportCancelled": "Profile import cancelled",
+    "toastImportInvalid": "Invalid profile file structure",
+    "importConflictTitle": "Overwrite Profile?",
+    "importConflictDesc": "A profile named \"{{name}}\" already exists. Do you want to overwrite it?",
+    "importOverwrite": "Overwrite"
   },
   "targets": {
     "title": "Target Applications",

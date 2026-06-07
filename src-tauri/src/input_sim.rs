@@ -259,25 +259,53 @@ pub fn simulate_mouse_button(button: &str, pressed: bool) -> Result<(), String> 
 
         let (flags, data) = match button {
             "MOUSE_LEFT" => {
-                if pressed { (MOUSEEVENTF_LEFTDOWN, 0) } else { (MOUSEEVENTF_LEFTUP, 0) }
+                if pressed {
+                    (MOUSEEVENTF_LEFTDOWN, 0)
+                } else {
+                    (MOUSEEVENTF_LEFTUP, 0)
+                }
             }
             "MOUSE_RIGHT" => {
-                if pressed { (MOUSEEVENTF_RIGHTDOWN, 0) } else { (MOUSEEVENTF_RIGHTUP, 0) }
+                if pressed {
+                    (MOUSEEVENTF_RIGHTDOWN, 0)
+                } else {
+                    (MOUSEEVENTF_RIGHTUP, 0)
+                }
             }
             "MOUSE_MIDDLE" => {
-                if pressed { (MOUSEEVENTF_MIDDLEDOWN, 0) } else { (MOUSEEVENTF_MIDDLEUP, 0) }
+                if pressed {
+                    (MOUSEEVENTF_MIDDLEDOWN, 0)
+                } else {
+                    (MOUSEEVENTF_MIDDLEUP, 0)
+                }
             }
             "MOUSE_BUTTON4" => {
-                if pressed { (MOUSEEVENTF_XDOWN, 1) } else { (MOUSEEVENTF_XUP, 1) }
+                if pressed {
+                    (MOUSEEVENTF_XDOWN, 1)
+                } else {
+                    (MOUSEEVENTF_XUP, 1)
+                }
             }
             "MOUSE_BUTTON5" => {
-                if pressed { (MOUSEEVENTF_XDOWN, 2) } else { (MOUSEEVENTF_XUP, 2) }
+                if pressed {
+                    (MOUSEEVENTF_XDOWN, 2)
+                } else {
+                    (MOUSEEVENTF_XUP, 2)
+                }
             }
             "MOUSE_SCROLLUP" => {
-                if pressed { (MOUSEEVENTF_WHEEL, 120) } else { (0, 0) }
+                if pressed {
+                    (MOUSEEVENTF_WHEEL, 120)
+                } else {
+                    (0, 0)
+                }
             }
             "MOUSE_SCROLLDOWN" => {
-                if pressed { (MOUSEEVENTF_WHEEL, -120i32 as u32) } else { (0, 0) }
+                if pressed {
+                    (MOUSEEVENTF_WHEEL, -120i32 as u32)
+                } else {
+                    (0, 0)
+                }
             }
             _ => return Err(format!("Unsupported mouse button '{button}'")),
         };

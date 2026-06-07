@@ -33,6 +33,7 @@ import {
   Activity,
   ChevronDown,
   Copy,
+  Download,
   MoreVertical,
   Pause,
   Pencil,
@@ -41,6 +42,7 @@ import {
   RefreshCw,
   Sliders,
   Trash2,
+  Upload,
   X
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -68,7 +70,9 @@ export function Remap() {
     activeProfile,
     setActiveProfile,
     saveProfile,
-    deleteProfile
+    deleteProfile,
+    exportProfile,
+    importProfile
   } = useSettingsStore();
 
   const confirm = useConfirm();
@@ -98,6 +102,60 @@ export function Remap() {
         console.error(err);
         toast.error(t('profile.toastDeleteError'));
       }
+    }
+  };
+
+  const handleExportProfile = async () => {
+    try {
+      const result = await exportProfile(active.name);
+      if (result) {
+        toast.success(t('profile.toastExportSuccess'));
+      } else {
+        toast.info(t('profile.toastExportCancelled'));
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error(t('profile.toastExportError'));
+    }
+  };
+
+  const handleImportProfile = async () => {
+    try {
+      const profile = await importProfile();
+      if (!profile) {
+        toast.info(t('profile.toastImportCancelled'));
+        return;
+      }
+
+      if (!profile.name || !Array.isArray(profile.mappings)) {
+        toast.error(t('profile.toastImportInvalid'));
+        return;
+      }
+
+      const existing = profiles.find(
+        (p) => p.name.toLowerCase() === profile.name.toLowerCase()
+      );
+
+      if (existing) {
+        const confirmed = await confirm({
+          title: t('profile.importConflictTitle'),
+          description: t('profile.importConflictDesc', { name: profile.name }),
+          confirmText: t('profile.importOverwrite'),
+          cancelText: t('profile.cancel'),
+          variant: 'primary'
+        });
+
+        if (!confirmed) {
+          return;
+        }
+      }
+
+      await saveProfile(profile);
+      await setActiveProfile(profile.name);
+      toast.success(t('profile.toastImportSuccess'));
+    } catch (err) {
+      console.error(err);
+      toast.error(t('profile.toastImportError'));
     }
   };
 
@@ -555,6 +613,32 @@ export function Remap() {
                       >
                         <Copy className="w-3.5 h-3.5 text-zinc-400" />
                         <span>{t('profile.duplicate')}</span>
+                      </button>
+
+                      {/* Export Profile */}
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          setMenuOpen(false);
+                          await handleExportProfile();
+                        }}
+                        className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-xs text-left text-zinc-300 hover:bg-zinc-900/60 hover:text-zinc-100 transition cursor-pointer"
+                      >
+                        <Download className="w-3.5 h-3.5 text-zinc-400" />
+                        <span>{t('profile.export')}</span>
+                      </button>
+
+                      {/* Import Profile */}
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          setMenuOpen(false);
+                          await handleImportProfile();
+                        }}
+                        className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-xs text-left text-zinc-300 hover:bg-zinc-900/60 hover:text-zinc-100 transition cursor-pointer"
+                      >
+                        <Upload className="w-3.5 h-3.5 text-zinc-400" />
+                        <span>{t('profile.import')}</span>
                       </button>
 
                       <div className="h-px bg-border-main/55 my-1" />

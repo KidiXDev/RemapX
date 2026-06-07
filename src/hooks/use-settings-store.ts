@@ -53,6 +53,8 @@ interface SettingsState {
   renameProfile: (oldName: string, newName: string) => Promise<void>;
   deleteProfile: (name: string) => Promise<void>;
   duplicateProfile: (name: string, newName: string) => Promise<void>;
+  exportProfile: (name: string) => Promise<string | null>;
+  importProfile: () => Promise<Profile | null>;
 }
 
 const parseBool = (value: string | undefined, fallback: boolean) => {
@@ -218,5 +220,13 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
     await invoke('duplicate_profile', { name, newName });
     const profiles = await fetchProfiles();
     set({ profiles });
+  },
+
+  exportProfile: async (name) => {
+    return await invoke<string | null>('export_profile', { name });
+  },
+
+  importProfile: async () => {
+    return await invoke<Profile | null>('import_profile');
   }
 }));

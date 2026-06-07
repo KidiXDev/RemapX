@@ -849,7 +849,12 @@ pub fn start_engine(app: AppHandle, engine: State<'_, EngineState>) -> Result<()
             thread::sleep(Duration::from_millis(1));
         }
 
-        process_analog_mappings(&[0.0; 4], cached_profile.as_ref(), &mut analog_runtime, &app_handle);
+        process_analog_mappings(
+            &[0.0; 4],
+            cached_profile.as_ref(),
+            &mut analog_runtime,
+            &app_handle,
+        );
     });
 
     monitor::spawn_monitor(app, Arc::clone(&engine.running));
