@@ -9,6 +9,15 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/KidiXDev/RemapX/releases">
+    <img src="https://img.shields.io/github/v/release/KidiXDev/RemapX?style=flat-square&color=6366f1&logo=github" alt="Latest Release" />
+  </a>
+  <a href="https://github.com/KidiXDev/RemapX/releases">
+    <img src="https://img.shields.io/github/downloads/KidiXDev/RemapX/total?style=flat-square&color=10b981" alt="Total Downloads" />
+  </a>
+</p>
+
+<p align="center">
   <img src="./public/screenshot.png" width="100%" alt="RemapX UI Showcase" />
 </p>
 
@@ -62,7 +71,7 @@ And more...
 Ensure you have the following installed on your machine:
 1. **Node.js** (v18 or higher)
 2. **Rust** toolchain (installed via [rustup](https://rustup.rs/))
-3. **Bun** package manager (`npm install -g bun`)
+3. [**Bun**](https://bun.sh/) package manager
 4. Build tools for Windows (e.g., Visual Studio C++ Build Tools)
 
 ### Installation
@@ -70,11 +79,9 @@ Ensure you have the following installed on your machine:
 Clone the repository and install the dependencies:
 
 ```bash
-# Clone the repository
 git clone https://github.com/KidiXDev/RemapX.git
 cd RemapX
 
-# Install npm/bun dependencies
 bun install
 ```
 
