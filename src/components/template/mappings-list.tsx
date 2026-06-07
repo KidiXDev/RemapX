@@ -1,6 +1,10 @@
 import { Input } from '@/components/common/input';
 import { Mapping } from '@/hooks/use-settings-store';
 import {
+  formatMappingValue,
+  getStickMotionLabel
+} from '@/lib/mapping-utils';
+import {
   Gamepad as GamepadIcon,
   Search,
   Trash2,
@@ -27,7 +31,9 @@ export const buttonLabelMap: Record<number, string> = {
   13: 'D-Up',
   14: 'D-Down',
   15: 'D-Left',
-  16: 'D-Right'
+  16: 'D-Right',
+  100: 'L-Stick Move',
+  101: 'R-Stick Move'
 };
 
 interface MappingsListProps {
@@ -48,8 +54,10 @@ export function MappingsList({
     if (!bindingsQuery.trim()) return mappings;
     const query = bindingsQuery.toLowerCase();
     return mappings.filter((map) => {
-      const btnLabel = (buttonLabelMap[map.button_id] || '').toLowerCase();
-      const keyStr = (map.key_str || '').toLowerCase();
+      const btnLabel = (
+        getStickMotionLabel(map.button_id) || buttonLabelMap[map.button_id] || ''
+      ).toLowerCase();
+      const keyStr = formatMappingValue(map).toLowerCase();
       return btnLabel.includes(query) || keyStr.includes(query);
     });
   }, [mappings, bindingsQuery]);
@@ -121,7 +129,8 @@ export function MappingsList({
                 {/* Gamepad Input */}
                 <div className="col-span-3 flex items-center">
                   <span className="inline-flex items-center justify-center min-w-10 h-7 px-2.5 rounded-full bg-primary-bg border border-primary-border/80 text-primary-text font-bold text-xs uppercase shadow-sm">
-                    {buttonLabelMap[map.button_id] ||
+                    {getStickMotionLabel(map.button_id) ||
+                      buttonLabelMap[map.button_id] ||
                       `Button ${map.button_id}`}
                   </span>
                 </div>
@@ -134,7 +143,7 @@ export function MappingsList({
                 {/* Mapped Keyboard Keycap */}
                 <div className="col-span-3 flex items-center">
                   <kbd className="min-w-[32px] h-7 px-2.5 flex items-center justify-center rounded-lg bg-zinc-950 border border-zinc-700 text-zinc-100 text-xs font-mono font-bold shadow-md shadow-black/60 uppercase">
-                    {map.key_str}
+                    {formatMappingValue(map)}
                   </kbd>
                 </div>
 

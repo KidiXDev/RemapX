@@ -21,6 +21,43 @@ use windows_sys::Win32::UI::Input::XboxController::{
 };
 
 static LAST_TRIGGER_TIMES: OnceLock<Mutex<HashMap<i64, Instant>>> = OnceLock::new();
+const LEFT_STICK_MOTION_ID: i64 = 100;
+const RIGHT_STICK_MOTION_ID: i64 = 101;
+
+#[derive(Clone, Default)]
+struct AnalogKeyState {
+    up: Option<String>,
+    left: Option<String>,
+    down: Option<String>,
+    right: Option<String>,
+}
+
+#[derive(Clone, Default)]
+struct MouseAccumulator {
+    x: f32,
+    y: f32,
+}
+
+#[derive(Clone, Default)]
+struct AnalogRuntimeState {
+    left_keys: AnalogKeyState,
+    right_keys: AnalogKeyState,
+    left_mouse: MouseAccumulator,
+    right_mouse: MouseAccumulator,
+}
+
+#[derive(Clone)]
+struct AnalogKeyboardMapping {
+    up: String,
+    left: String,
+    down: String,
+    right: String,
+}
+
+#[derive(Clone)]
+struct MouseMoveMapping {
+    sensitivity: f32,
+}
 
 fn get_active_profile() -> Option<Profile> {
     let active_profile = db::get_settings()
@@ -88,6 +125,235 @@ fn axis_to_id(axis: Axis) -> u8 {
         Axis::RightStickY => 3,
         _ => 99,
     }
+}
+
+fn parse_analog_keyboard_mapping(value: &str) -> AnalogKeyboardMapping {
+    let mut parts = value
+        .split('|')
+        .map(|part| part.trim().to_ascii_uppercase())
+        .collect::<Vec<_>>();
+    while parts.len() < 4 {
+        parts.push(String::new());
+    }
+
+    AnalogKeyboardMapping {
+        up: if parts[0].is_empty() {
+            "W".to_string()
+        } else {
+            parts[0].clone()
+        },
+        left: if parts[1].is_empty() {
+            "A".to_string()
+        } else {
+            parts[1].clone()
+        },
+        down: if parts[2].is_empty() {
+            "S".to_string()
+        } else {
+            parts[2].clone()
+        },
+        right: if parts[3].is_empty() {
+            "D".to_string()
+        } else {
+            parts[3].clone()
+        },
+    }
+}
+
+fn parse_mouse_move_mapping(value: &str) -> MouseMoveMapping {
+    let sensitivity = value
+        .trim()
+        .parse::<f32>()
+        .ok()
+        .filter(|value| *value > 0.0)
+        .unwrap_or(18.0);
+    MouseMoveMapping { sensitivity }
+}
+
+fn apply_deadzone(value: f32, deadzone: f32) -> f32 {
+    if value.abs() < deadzone {
+        0.0
+    } else {
+        value
+    }
+}
+
+fn update_direction_key(
+    key: &str,
+    should_press: bool,
+    pressed_key: &mut Option<String>,
+    app: &AppHandle,
+) {
+    if should_press {
+        if pressed_key.as_deref() == Some(key) {
+            return;
+        }
+
+        if let Some(previous) = pressed_key.clone() {
+            update_direction_key(&previous, false, pressed_key, app);
+        }
+
+        let Some(vk) = input_sim::key_to_vk(key) else {
+            settings_helper::emit_engine_log(app, format!("Unsupported analog key '{key}'"), false);
+            return;
+        };
+
+        if let Err(err) = input_sim::key_down(vk) {
+            settings_helper::emit_engine_log(app, format!("Analog input failed: {err}"), false);
+        } else {
+            *pressed_key = Some(key.to_string());
+        }
+        return;
+    }
+
+    let Some(current_key) = pressed_key.clone() else {
+        return;
+    };
+
+    let Some(vk) = input_sim::key_to_vk(&current_key) else {
+        *pressed_key = None;
+        return;
+    };
+
+    if let Err(err) = input_sim::key_up(vk) {
+        settings_helper::emit_engine_log(app, format!("Analog input failed: {err}"), false);
+    } else {
+        *pressed_key = None;
+    }
+}
+
+fn release_analog_keys(state: &mut AnalogKeyState, app: &AppHandle) {
+    update_direction_key("", false, &mut state.up, app);
+    update_direction_key("", false, &mut state.left, app);
+    update_direction_key("", false, &mut state.down, app);
+    update_direction_key("", false, &mut state.right, app);
+}
+
+fn process_analog_keyboard_mapping(
+    x: f32,
+    y: f32,
+    deadzone: f32,
+    mapping: &AnalogKeyboardMapping,
+    state: &mut AnalogKeyState,
+    app: &AppHandle,
+) {
+    let threshold = deadzone.max(0.35);
+    update_direction_key(&mapping.up, y <= -threshold, &mut state.up, app);
+    update_direction_key(&mapping.left, x <= -threshold, &mut state.left, app);
+    update_direction_key(&mapping.down, y >= threshold, &mut state.down, app);
+    update_direction_key(&mapping.right, x >= threshold, &mut state.right, app);
+}
+
+fn process_mouse_move_mapping(
+    x: f32,
+    y: f32,
+    deadzone: f32,
+    mapping: &MouseMoveMapping,
+    accumulator: &mut MouseAccumulator,
+    app: &AppHandle,
+) {
+    let x = apply_deadzone(x, deadzone);
+    let y = apply_deadzone(y, deadzone);
+    accumulator.x += x * mapping.sensitivity * 0.5;
+    accumulator.y += y * mapping.sensitivity * 0.5;
+
+    let dx = accumulator.x.trunc() as i32;
+    let dy = accumulator.y.trunc() as i32;
+    accumulator.x -= dx as f32;
+    accumulator.y -= dy as f32;
+
+    if let Err(err) = input_sim::move_mouse(dx, dy) {
+        settings_helper::emit_engine_log(app, format!("Mouse move failed: {err}"), false);
+    }
+}
+
+fn process_stick_mapping(
+    control_id: i64,
+    x: f32,
+    y: f32,
+    profile: &Profile,
+    runtime: &mut AnalogRuntimeState,
+    app: &AppHandle,
+) {
+    let Some(mapping) = profile
+        .mappings
+        .iter()
+        .find(|mapping| mapping.button_id == control_id)
+    else {
+        if control_id == LEFT_STICK_MOTION_ID {
+            release_analog_keys(&mut runtime.left_keys, app);
+            runtime.left_mouse = MouseAccumulator::default();
+        } else {
+            release_analog_keys(&mut runtime.right_keys, app);
+            runtime.right_mouse = MouseAccumulator::default();
+        }
+        return;
+    };
+
+    let deadzone = profile.axis_deadzone.clamp(0.0, 1.0) as f32;
+    let key_state = if control_id == LEFT_STICK_MOTION_ID {
+        &mut runtime.left_keys
+    } else {
+        &mut runtime.right_keys
+    };
+    let mouse_state = if control_id == LEFT_STICK_MOTION_ID {
+        &mut runtime.left_mouse
+    } else {
+        &mut runtime.right_mouse
+    };
+
+    match mapping.mapping_type.as_str() {
+        "AnalogKeyboard" => {
+            *mouse_state = MouseAccumulator::default();
+            let analog = parse_analog_keyboard_mapping(&mapping.key_str);
+            process_analog_keyboard_mapping(x, y, deadzone, &analog, key_state, app);
+        }
+        "MouseMove" => {
+            let analog = parse_mouse_move_mapping(&mapping.key_str);
+            release_analog_keys(key_state, app);
+            process_mouse_move_mapping(x, y, deadzone, &analog, mouse_state, app);
+        }
+        _ => {
+            release_analog_keys(key_state, app);
+            *mouse_state = MouseAccumulator::default();
+        }
+    }
+}
+
+fn process_analog_mappings(
+    axes: &[f32; 4],
+    profile: Option<&Profile>,
+    runtime: &mut AnalogRuntimeState,
+    app: &AppHandle,
+) {
+    if settings_helper::is_own_window_focused() {
+        release_analog_keys(&mut runtime.left_keys, app);
+        release_analog_keys(&mut runtime.right_keys, app);
+        runtime.left_mouse = MouseAccumulator::default();
+        runtime.right_mouse = MouseAccumulator::default();
+        return;
+    }
+
+    let Some(profile) = profile else {
+        return;
+    };
+
+    process_stick_mapping(
+        LEFT_STICK_MOTION_ID,
+        axes[0],
+        axes[1],
+        profile,
+        runtime,
+        app,
+    );
+    process_stick_mapping(
+        RIGHT_STICK_MOTION_ID,
+        axes[2],
+        axes[3],
+        profile,
+        runtime,
+        app,
+    );
 }
 
 fn trigger_mapping_action_with_profile(button_id: i64, app: &AppHandle, profile: &Profile) {
@@ -318,6 +584,9 @@ pub fn start_engine(app: AppHandle, engine: State<'_, EngineState>) -> Result<()
         let mut xinput_axes_prev: [[f32; 4]; 4] = [[0.0; 4]; 4];
         let mut cached_profile = get_active_profile();
         let mut last_profile_refresh = Instant::now();
+        let mut axis_state = [0.0_f32; 4];
+        let mut analog_runtime = AnalogRuntimeState::default();
+        let mut last_analog_tick = Instant::now();
 
         while running.load(Ordering::Relaxed) {
             if last_profile_refresh.elapsed() >= Duration::from_millis(250) {
@@ -403,6 +672,7 @@ pub fn start_engine(app: AppHandle, engine: State<'_, EngineState>) -> Result<()
                             } else {
                                 value
                             };
+                            axis_state[axis_id as usize] = value;
                             let _ = app_handle
                                 .emit("gamepad-axis-state", GamepadAxisState { axis_id, value });
                         }
@@ -526,6 +796,7 @@ pub fn start_engine(app: AppHandle, engine: State<'_, EngineState>) -> Result<()
                         let now_val = axes_now[axis_id];
                         if (now_val - prev_val).abs() > 0.015 {
                             xinput_axes_prev[user_idx][axis_id] = now_val;
+                            axis_state[axis_id] = now_val;
                             let _ = app_handle.emit(
                                 "gamepad-axis-state",
                                 GamepadAxisState {
@@ -538,8 +809,20 @@ pub fn start_engine(app: AppHandle, engine: State<'_, EngineState>) -> Result<()
                 }
             }
 
+            if last_analog_tick.elapsed() >= Duration::from_millis(8) {
+                process_analog_mappings(
+                    &axis_state,
+                    cached_profile.as_ref(),
+                    &mut analog_runtime,
+                    &app_handle,
+                );
+                last_analog_tick = Instant::now();
+            }
+
             thread::sleep(Duration::from_millis(1));
         }
+
+        process_analog_mappings(&[0.0; 4], cached_profile.as_ref(), &mut analog_runtime, &app_handle);
     });
 
     monitor::spawn_monitor(app, Arc::clone(&engine.running));

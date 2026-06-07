@@ -1,5 +1,6 @@
 import { Button } from '@/components/common/button';
 import { Card } from '@/components/common/card';
+import { Input } from '@/components/common/input';
 import { Select } from '@/components/common/select';
 import { Slider } from '@/components/common/slider';
 import { Tabs } from '@/components/common/tabs';
@@ -15,6 +16,17 @@ import { useConnectedGamepads } from '@/hooks/use-connected-gamepads';
 import { useDisclosure } from '@/hooks/use-disclosure';
 import { Mapping, Profile, useSettingsStore } from '@/hooks/use-settings-store';
 import { cn } from '@/lib/utils';
+import {
+  decodeAnalogKeyboardConfig,
+  decodeMouseMoveConfig,
+  DEFAULT_ANALOG_KEYBOARD_CONFIG,
+  DEFAULT_MOUSE_MOVE_CONFIG,
+  encodeAnalogKeyboardConfig,
+  encodeMouseMoveConfig,
+  LEFT_STICK_MOTION_ID,
+  RIGHT_STICK_MOTION_ID,
+  StickMappingMode
+} from '@/lib/mapping-utils';
 import { invoke } from '@tauri-apps/api/core';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
@@ -40,6 +52,105 @@ interface ConnectedGamepad {
 }
 
 type TabType = 'bindings' | 'live';
+
+interface StickMotionCardProps {
+  title: string;
+  description: string;
+  mode: StickMappingMode;
+  keyboardConfig: {
+    up: string;
+    left: string;
+    down: string;
+    right: string;
+  };
+  mouseConfig: {
+    sensitivity: number;
+  };
+  onModeChange: (mode: StickMappingMode) => void;
+  onKeyboardChange: (key: 'up' | 'left' | 'down' | 'right', value: string) => void;
+  onMouseSensitivityChange: (value: number) => void;
+}
+
+function StickMotionCard({
+  title,
+  description,
+  mode,
+  keyboardConfig,
+  mouseConfig,
+  onModeChange,
+  onKeyboardChange,
+  onMouseSensitivityChange
+}: StickMotionCardProps) {
+  return (
+    <Card className="border-border-main/50 bg-zinc-950/20 p-4 space-y-4">
+      <div className="flex flex-col gap-1">
+        <h4 className="text-sm font-semibold text-zinc-100">{title}</h4>
+        <p className="text-xs text-zinc-500 leading-relaxed">{description}</p>
+      </div>
+
+      <div className="space-y-3">
+        <div className="space-y-1.5">
+          <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
+            Mode
+          </span>
+          <Select
+            value={mode}
+            onChange={onModeChange}
+            options={[
+              { value: 'off', label: 'Off' },
+              { value: 'keyboard', label: 'Keyboard movement' },
+              { value: 'mouse', label: 'Mouse movement' }
+            ]}
+          />
+        </div>
+
+        {mode === 'keyboard' && (
+          <div className="grid grid-cols-2 gap-3">
+            {(
+              [
+                ['up', 'Up'],
+                ['left', 'Left'],
+                ['down', 'Down'],
+                ['right', 'Right']
+              ] as const
+            ).map(([key, label]) => (
+              <label key={key} className="space-y-1.5">
+                <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
+                  {label}
+                </span>
+                <Input
+                  maxLength={12}
+                  value={keyboardConfig[key]}
+                  onChange={(event) =>
+                    onKeyboardChange(key, event.target.value.toUpperCase())
+                  }
+                  placeholder={label}
+                />
+              </label>
+            ))}
+          </div>
+        )}
+
+        {mode === 'mouse' && (
+          <label className="space-y-1.5 block">
+            <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
+              Sensitivity
+            </span>
+            <Input
+              type="number"
+              min={1}
+              max={50}
+              value={String(mouseConfig.sensitivity)}
+              onChange={(event) =>
+                onMouseSensitivityChange(Number(event.target.value) || 1)
+              }
+            />
+          </label>
+        )}
+      </div>
+    </Card>
+  );
+}
 
 const EMPTY_PROFILE: Profile = {
   name: 'Default',
@@ -142,6 +253,49 @@ export function Remap() {
         .filter(Boolean),
     [active.target_exe]
   );
+
+  const leftStickMapping = useMemo(
+    () =>
+      active.mappings.find(
+        (mapping) => mapping.button_id === LEFT_STICK_MOTION_ID
+      ),
+    [active.mappings]
+  );
+  const rightStickMapping = useMemo(
+    () =>
+      active.mappings.find(
+        (mapping) => mapping.button_id === RIGHT_STICK_MOTION_ID
+      ),
+    [active.mappings]
+  );
+
+  const leftStickMode = leftStickMapping
+    ? leftStickMapping.mapping_type === 'AnalogKeyboard'
+      ? 'keyboard'
+      : leftStickMapping.mapping_type === 'MouseMove'
+        ? 'mouse'
+        : 'off'
+    : 'off';
+  const rightStickMode = rightStickMapping
+    ? rightStickMapping.mapping_type === 'AnalogKeyboard'
+      ? 'keyboard'
+      : rightStickMapping.mapping_type === 'MouseMove'
+        ? 'mouse'
+        : 'off'
+    : 'off';
+
+  const leftKeyboardConfig = leftStickMapping
+    ? decodeAnalogKeyboardConfig(leftStickMapping.key_str)
+    : DEFAULT_ANALOG_KEYBOARD_CONFIG;
+  const rightKeyboardConfig = rightStickMapping
+    ? decodeAnalogKeyboardConfig(rightStickMapping.key_str)
+    : DEFAULT_ANALOG_KEYBOARD_CONFIG;
+  const leftMouseConfig = leftStickMapping
+    ? decodeMouseMoveConfig(leftStickMapping.key_str)
+    : DEFAULT_MOUSE_MOVE_CONFIG;
+  const rightMouseConfig = rightStickMapping
+    ? decodeMouseMoveConfig(rightStickMapping.key_str)
+    : DEFAULT_MOUSE_MOVE_CONFIG;
 
   useEffect(() => {
     const initEngine = async () => {
@@ -295,6 +449,70 @@ export function Remap() {
     await saveProfile({
       ...active,
       mappings: active.mappings.filter((item) => item.button_id !== buttonId)
+    });
+  };
+
+  const upsertMapping = async (nextMapping: Mapping) => {
+    const nextMappings = active.mappings.filter(
+      (item) => item.button_id !== nextMapping.button_id
+    );
+    nextMappings.push(nextMapping);
+    nextMappings.sort((a, b) => a.button_id - b.button_id);
+    await saveProfile({ ...active, mappings: nextMappings });
+  };
+
+  const updateStickMode = async (
+    buttonId: number,
+    mode: StickMappingMode,
+    defaults: { keyboard: typeof DEFAULT_ANALOG_KEYBOARD_CONFIG; mouse: typeof DEFAULT_MOUSE_MOVE_CONFIG }
+  ) => {
+    if (mode === 'off') {
+      await onDeleteMapping(buttonId);
+      return;
+    }
+
+    if (mode === 'keyboard') {
+      await upsertMapping({
+        button_id: buttonId,
+        key_str: encodeAnalogKeyboardConfig(defaults.keyboard),
+        mapping_type: 'AnalogKeyboard'
+      });
+      return;
+    }
+
+    await upsertMapping({
+      button_id: buttonId,
+      key_str: encodeMouseMoveConfig(defaults.mouse),
+      mapping_type: 'MouseMove'
+    });
+  };
+
+  const updateAnalogKeyboardKey = async (
+    buttonId: number,
+    config: typeof DEFAULT_ANALOG_KEYBOARD_CONFIG,
+    key: 'up' | 'left' | 'down' | 'right',
+    value: string
+  ) => {
+    await upsertMapping({
+      button_id: buttonId,
+      key_str: encodeAnalogKeyboardConfig({
+        ...config,
+        [key]: value.trim().toUpperCase()
+      }),
+      mapping_type: 'AnalogKeyboard'
+    });
+  };
+
+  const updateMouseSensitivity = async (
+    buttonId: number,
+    value: number
+  ) => {
+    await upsertMapping({
+      button_id: buttonId,
+      key_str: encodeMouseMoveConfig({
+        sensitivity: Math.min(50, Math.max(1, value))
+      }),
+      mapping_type: 'MouseMove'
     });
   };
 
@@ -644,11 +862,71 @@ export function Remap() {
                 )}
               >
                 {activeTab === 'bindings' ? (
-                  <MappingsList
-                    mappings={active.mappings}
-                    onDeleteMapping={onDeleteMapping}
-                    profileName={active.name}
-                  />
+                  <div className="space-y-5">
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                      <StickMotionCard
+                        title="Left Stick Motion"
+                        description="Use the left analog stick for WASD-style movement or continuous mouse movement."
+                        mode={leftStickMode}
+                        keyboardConfig={leftKeyboardConfig}
+                        mouseConfig={leftMouseConfig}
+                        onModeChange={(mode) =>
+                          void updateStickMode(LEFT_STICK_MOTION_ID, mode, {
+                            keyboard: leftKeyboardConfig,
+                            mouse: leftMouseConfig
+                          })
+                        }
+                        onKeyboardChange={(key, value) =>
+                          void updateAnalogKeyboardKey(
+                            LEFT_STICK_MOTION_ID,
+                            leftKeyboardConfig,
+                            key,
+                            value
+                          )
+                        }
+                        onMouseSensitivityChange={(value) =>
+                          void updateMouseSensitivity(
+                            LEFT_STICK_MOTION_ID,
+                            value
+                          )
+                        }
+                      />
+
+                      <StickMotionCard
+                        title="Right Stick Motion"
+                        description="Use the right analog stick for directional keys or mouse-look style movement."
+                        mode={rightStickMode}
+                        keyboardConfig={rightKeyboardConfig}
+                        mouseConfig={rightMouseConfig}
+                        onModeChange={(mode) =>
+                          void updateStickMode(RIGHT_STICK_MOTION_ID, mode, {
+                            keyboard: rightKeyboardConfig,
+                            mouse: rightMouseConfig
+                          })
+                        }
+                        onKeyboardChange={(key, value) =>
+                          void updateAnalogKeyboardKey(
+                            RIGHT_STICK_MOTION_ID,
+                            rightKeyboardConfig,
+                            key,
+                            value
+                          )
+                        }
+                        onMouseSensitivityChange={(value) =>
+                          void updateMouseSensitivity(
+                            RIGHT_STICK_MOTION_ID,
+                            value
+                          )
+                        }
+                      />
+                    </div>
+
+                    <MappingsList
+                      mappings={active.mappings}
+                      onDeleteMapping={onDeleteMapping}
+                      profileName={active.name}
+                    />
+                  </div>
                 ) : (
                   <DiagnosticsTerminal />
                 )}

@@ -3,8 +3,9 @@ use windows_sys::Win32::Foundation::GetLastError;
 
 #[cfg(target_os = "windows")]
 use windows_sys::Win32::UI::Input::KeyboardAndMouse::{
-    MapVirtualKeyW, SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_EXTENDEDKEY,
-    KEYEVENTF_KEYUP, KEYEVENTF_SCANCODE, MAPVK_VK_TO_VSC_EX,
+    MapVirtualKeyW, SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, INPUT_MOUSE, KEYBDINPUT,
+    KEYEVENTF_EXTENDEDKEY, KEYEVENTF_KEYUP, KEYEVENTF_SCANCODE, MAPVK_VK_TO_VSC_EX,
+    MOUSEEVENTF_MOVE, MOUSEINPUT,
 };
 
 #[cfg(target_os = "windows")]
@@ -125,8 +126,34 @@ fn send_keyboard_input(vk: u16, key_up: bool) -> Result<(), u32> {
 pub fn tap_key(vk: u16) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
+        key_down(vk)?;
+        key_up(vk)?;
+        Ok(())
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = vk;
+        Ok(())
+    }
+}
+
+pub fn key_down(vk: u16) -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    {
         send_keyboard_input(vk, false)
             .map_err(|code| format!("key down SendInput failed (vk={vk}, err={code})"))?;
+        Ok(())
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = vk;
+        Ok(())
+    }
+}
+
+pub fn key_up(vk: u16) -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    {
         send_keyboard_input(vk, true)
             .map_err(|code| format!("key up SendInput failed (vk={vk}, err={code})"))?;
         Ok(())
@@ -134,6 +161,54 @@ pub fn tap_key(vk: u16) -> Result<(), String> {
     #[cfg(not(target_os = "windows"))]
     {
         let _ = vk;
+        Ok(())
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn send_mouse_move_input(dx: i32, dy: i32) -> Result<(), u32> {
+    let mut input = INPUT {
+        r#type: INPUT_MOUSE,
+        Anonymous: INPUT_0 {
+            mi: MOUSEINPUT {
+                dx,
+                dy,
+                mouseData: 0,
+                dwFlags: MOUSEEVENTF_MOVE,
+                time: 0,
+                dwExtraInfo: 0,
+            },
+        },
+    };
+
+    let sent = unsafe {
+        SendInput(
+            1,
+            &mut input as *mut INPUT,
+            std::mem::size_of::<INPUT>() as i32,
+        )
+    };
+
+    if sent == 1 {
+        Ok(())
+    } else {
+        Err(unsafe { GetLastError() })
+    }
+}
+
+pub fn move_mouse(dx: i32, dy: i32) -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    {
+        if dx == 0 && dy == 0 {
+            return Ok(());
+        }
+
+        send_mouse_move_input(dx, dy)
+            .map_err(|code| format!("mouse move SendInput failed (dx={dx}, dy={dy}, err={code})"))
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = (dx, dy);
         Ok(())
     }
 }
