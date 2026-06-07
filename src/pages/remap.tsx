@@ -531,10 +531,10 @@ export function Remap() {
 
   return (
     <>
-      <ContentLayout>
-        <div className="flex flex-col">
+      <ContentLayout className="flex-1 flex flex-col min-h-0">
+        <div className="flex flex-col flex-1 min-h-0">
           {/* Top Control Panel */}
-          <Card className="flex flex-col sm:flex-row sm:items-center justify-between p-2.5 px-4 border-border-main/70 bg-bg-card mb-6 overflow-visible space-y-3 sm:space-y-0 gap-3 min-h-[56px]">
+          <Card className="flex flex-col sm:flex-row sm:items-center justify-between p-2.5 px-4 border-border-main/70 bg-bg-card mb-6 overflow-visible space-y-3 sm:space-y-0 gap-3 min-h-[56px] shrink-0">
             {/* Left: Profile Selector, Actions, & Settings Popover */}
             <div className="flex flex-wrap items-center gap-3 shrink-0">
               <div className="flex items-center gap-2">
@@ -818,9 +818,9 @@ export function Remap() {
           </Card>
 
           {/* Main Side-by-Side Workspace */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch flex-1 min-h-0">
             {/* Gamepad Canvas Card */}
-            <Card className="lg:col-span-7 relative flex flex-col items-center justify-center p-6 border-border-main/70 bg-bg-card h-[580px] overflow-hidden space-y-0">
+            <Card className="lg:col-span-7 relative flex flex-col items-center justify-center p-6 border-border-main/70 bg-bg-card h-full min-h-[400px] overflow-hidden space-y-0">
               {/* Start/Stop Engine Button */}
               <div className="absolute top-4 right-4 z-10">
                 <Button
@@ -890,7 +890,7 @@ export function Remap() {
             </Card>
 
             {/* Key Bindings & Diagnostics Card */}
-            <Card className="lg:col-span-5 overflow-hidden p-0 h-[580px] flex flex-col space-y-0 border-border-main/70 bg-bg-card">
+            <Card className="lg:col-span-5 overflow-hidden p-0 h-full min-h-[400px] flex flex-col space-y-0 border-border-main/70 bg-bg-card">
               <Tabs
                 options={tabOptions}
                 activeId={activeTab}

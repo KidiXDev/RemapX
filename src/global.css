@@ -114,11 +114,9 @@
   @keyframes fade-in {
     from {
       opacity: 0;
-      transform: translateY(4px);
     }
     to {
       opacity: 1;
-      transform: translateY(0);
     }
   }
 }
@@ -168,6 +166,24 @@
   * {
     scrollbar-width: thin;
     scrollbar-color: var(--border-main) transparent;
+  }
+
+  /* Disable text selection in production except for inputs */
+  .prod-mode,
+  .prod-mode body {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+
+  .prod-mode input,
+  .prod-mode textarea,
+  .prod-mode [contenteditable="true"] {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
   }
 }
 

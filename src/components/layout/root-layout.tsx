@@ -59,7 +59,7 @@ export function RootLayout() {
         <div className="h-screen w-screen flex flex-col overflow-hidden bg-bg-main text-zinc-100 font-sans selection:bg-primary/30 selection:text-primary-text">
           <Titlebar isSettingsPage={isSettingsPage} />
 
-          <main className="flex-1 overflow-y-auto p-6 relative min-w-0">
+          <main className="flex-1 overflow-y-auto p-6 relative min-w-0 flex flex-col">
             {!ready ? (
               <div className="flex items-center justify-center h-full w-full">
                 <div className="flex flex-col items-center gap-3">

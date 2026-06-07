@@ -8,6 +8,7 @@ if (import.meta.env.PROD) {
   window.addEventListener('contextmenu', (event) => {
     event.preventDefault();
   });
+  document.documentElement.classList.add('prod-mode');
 }
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
