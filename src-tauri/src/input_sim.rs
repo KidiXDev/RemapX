@@ -212,3 +212,91 @@ pub fn move_mouse(dx: i32, dy: i32) -> Result<(), String> {
         Ok(())
     }
 }
+
+#[cfg(target_os = "windows")]
+fn send_mouse_input(dw_flags: u32, mouse_data: u32) -> Result<(), u32> {
+    let mut input = INPUT {
+        r#type: INPUT_MOUSE,
+        Anonymous: INPUT_0 {
+            mi: MOUSEINPUT {
+                dx: 0,
+                dy: 0,
+                mouseData: mouse_data as _,
+                dwFlags: dw_flags,
+                time: 0,
+                dwExtraInfo: 0,
+            },
+        },
+    };
+
+    let sent = unsafe {
+        SendInput(
+            1,
+            &mut input as *mut INPUT,
+            std::mem::size_of::<INPUT>() as i32,
+        )
+    };
+
+    if sent == 1 {
+        Ok(())
+    } else {
+        Err(unsafe { GetLastError() })
+    }
+}
+
+pub fn simulate_mouse_button(button: &str, pressed: bool) -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    {
+        const MOUSEEVENTF_LEFTDOWN: u32 = 0x0002;
+        const MOUSEEVENTF_LEFTUP: u32 = 0x0004;
+        const MOUSEEVENTF_RIGHTDOWN: u32 = 0x0008;
+        const MOUSEEVENTF_RIGHTUP: u32 = 0x0010;
+        const MOUSEEVENTF_MIDDLEDOWN: u32 = 0x0020;
+        const MOUSEEVENTF_MIDDLEUP: u32 = 0x0040;
+        const MOUSEEVENTF_XDOWN: u32 = 0x0080;
+        const MOUSEEVENTF_XUP: u32 = 0x0100;
+        const MOUSEEVENTF_WHEEL: u32 = 0x0800;
+
+        let (flags, data) = match button {
+            "MOUSE_LEFT" => {
+                if pressed { (MOUSEEVENTF_LEFTDOWN, 0) } else { (MOUSEEVENTF_LEFTUP, 0) }
+            }
+            "MOUSE_RIGHT" => {
+                if pressed { (MOUSEEVENTF_RIGHTDOWN, 0) } else { (MOUSEEVENTF_RIGHTUP, 0) }
+            }
+            "MOUSE_MIDDLE" => {
+                if pressed { (MOUSEEVENTF_MIDDLEDOWN, 0) } else { (MOUSEEVENTF_MIDDLEUP, 0) }
+            }
+            "MOUSE_BUTTON4" => {
+                if pressed { (MOUSEEVENTF_XDOWN, 1) } else { (MOUSEEVENTF_XUP, 1) }
+            }
+            "MOUSE_BUTTON5" => {
+                if pressed { (MOUSEEVENTF_XDOWN, 2) } else { (MOUSEEVENTF_XUP, 2) }
+            }
+            "MOUSE_SCROLLUP" => {
+                if pressed { (MOUSEEVENTF_WHEEL, 120) } else { (0, 0) }
+            }
+            "MOUSE_SCROLLDOWN" => {
+                if pressed { (MOUSEEVENTF_WHEEL, -120i32 as u32) } else { (0, 0) }
+            }
+            _ => return Err(format!("Unsupported mouse button '{button}'")),
+        };
+
+        if flags != 0 {
+            send_mouse_input(flags, data)
+                .map_err(|code| format!("Mouse SendInput failed (err={code})"))?;
+        }
+        Ok(())
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = (button, pressed);
+        Ok(())
+    }
+}
+
+pub fn tap_mouse_button(button: &str) -> Result<(), String> {
+    simulate_mouse_button(button, true)?;
+    simulate_mouse_button(button, false)?;
+    Ok(())
+}

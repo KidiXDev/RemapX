@@ -417,25 +417,32 @@ fn trigger_mapping_action_with_profile(button_id: i64, app: &AppHandle, profile:
         true,
     );
 
-    if !mapping.mapping_type.eq_ignore_ascii_case("keyboard") {
+    if mapping.mapping_type.eq_ignore_ascii_case("keyboard") {
+        if let Some(vk) = input_sim::key_to_vk(&mapping.key_str) {
+            settings_helper::emit_engine_log(
+                app,
+                format!("Injecting key: '{}' (vk={vk})", mapping.key_str),
+                true,
+            );
+            if let Err(err) = input_sim::tap_key(vk) {
+                settings_helper::emit_engine_log(app, format!("Injection failed: {err}"), false);
+            } else if settings_helper::is_developer_mode_enabled() {
+                settings_helper::emit_engine_log(app, "Injection success", true);
+            }
+        } else {
+            settings_helper::emit_engine_log(
+                app,
+                format!("Remap skipped: unsupported key '{}'", mapping.key_str),
+                false,
+            );
+        }
+    } else if mapping.mapping_type.eq_ignore_ascii_case("mouse") {
         settings_helper::emit_engine_log(
             app,
-            format!(
-                "Remap skipped: mapping_type '{}' not implemented",
-                mapping.mapping_type
-            ),
-            false,
-        );
-        return;
-    }
-
-    if let Some(vk) = input_sim::key_to_vk(&mapping.key_str) {
-        settings_helper::emit_engine_log(
-            app,
-            format!("Injecting key: '{}' (vk={vk})", mapping.key_str),
+            format!("Injecting mouse button/scroll: '{}'", mapping.key_str),
             true,
         );
-        if let Err(err) = input_sim::tap_key(vk) {
+        if let Err(err) = input_sim::tap_mouse_button(&mapping.key_str) {
             settings_helper::emit_engine_log(app, format!("Injection failed: {err}"), false);
         } else if settings_helper::is_developer_mode_enabled() {
             settings_helper::emit_engine_log(app, "Injection success", true);
@@ -443,7 +450,10 @@ fn trigger_mapping_action_with_profile(button_id: i64, app: &AppHandle, profile:
     } else {
         settings_helper::emit_engine_log(
             app,
-            format!("Remap skipped: unsupported key '{}'", mapping.key_str),
+            format!(
+                "Remap skipped: mapping_type '{}' not implemented",
+                mapping.mapping_type
+            ),
             false,
         );
     }
@@ -505,25 +515,32 @@ fn trigger_mapping_action(button_id: i64, app: &AppHandle) {
         true,
     );
 
-    if !mapping.mapping_type.eq_ignore_ascii_case("keyboard") {
+    if mapping.mapping_type.eq_ignore_ascii_case("keyboard") {
+        if let Some(vk) = input_sim::key_to_vk(&mapping.key_str) {
+            settings_helper::emit_engine_log(
+                app,
+                format!("Injecting key: '{}' (vk={vk})", mapping.key_str),
+                true,
+            );
+            if let Err(err) = input_sim::tap_key(vk) {
+                settings_helper::emit_engine_log(app, format!("Injection failed: {err}"), false);
+            } else if settings_helper::is_developer_mode_enabled() {
+                settings_helper::emit_engine_log(app, "Injection success", true);
+            }
+        } else {
+            settings_helper::emit_engine_log(
+                app,
+                format!("Remap skipped: unsupported key '{}'", mapping.key_str),
+                false,
+            );
+        }
+    } else if mapping.mapping_type.eq_ignore_ascii_case("mouse") {
         settings_helper::emit_engine_log(
             app,
-            format!(
-                "Remap skipped: mapping_type '{}' not implemented",
-                mapping.mapping_type
-            ),
-            false,
-        );
-        return;
-    }
-
-    if let Some(vk) = input_sim::key_to_vk(&mapping.key_str) {
-        settings_helper::emit_engine_log(
-            app,
-            format!("Injecting key: '{}' (vk={vk})", mapping.key_str),
+            format!("Injecting mouse button/scroll: '{}'", mapping.key_str),
             true,
         );
-        if let Err(err) = input_sim::tap_key(vk) {
+        if let Err(err) = input_sim::tap_mouse_button(&mapping.key_str) {
             settings_helper::emit_engine_log(app, format!("Injection failed: {err}"), false);
         } else if settings_helper::is_developer_mode_enabled() {
             settings_helper::emit_engine_log(app, "Injection success", true);
@@ -531,7 +548,10 @@ fn trigger_mapping_action(button_id: i64, app: &AppHandle) {
     } else {
         settings_helper::emit_engine_log(
             app,
-            format!("Remap skipped: unsupported key '{}'", mapping.key_str),
+            format!(
+                "Remap skipped: mapping_type '{}' not implemented",
+                mapping.mapping_type
+            ),
             false,
         );
     }

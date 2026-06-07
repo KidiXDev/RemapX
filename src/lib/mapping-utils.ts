@@ -87,5 +87,18 @@ export function formatMappingValue(mapping: Mapping) {
     return `Sensitivity ${sensitivity}`;
   }
 
+  if (mapping.mapping_type === 'Mouse') {
+    const labels: Record<string, string> = {
+      MOUSE_LEFT: 'Left Click',
+      MOUSE_RIGHT: 'Right Click',
+      MOUSE_MIDDLE: 'Middle Click',
+      MOUSE_BUTTON4: 'Mouse Button 4',
+      MOUSE_BUTTON5: 'Mouse Button 5',
+      MOUSE_SCROLLUP: 'Scroll Up',
+      MOUSE_SCROLLDOWN: 'Scroll Down'
+    };
+    return labels[mapping.key_str] || mapping.key_str;
+  }
+
   return mapping.key_str;
 }
