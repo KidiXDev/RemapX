@@ -1,6 +1,5 @@
 import { Button } from '@/components/common/button';
 import { Card } from '@/components/common/card';
-import { Input } from '@/components/common/input';
 import { Select } from '@/components/common/select';
 import { Slider } from '@/components/common/slider';
 import { Tabs } from '@/components/common/tabs';
@@ -15,7 +14,6 @@ import { ProfileDialogs } from '@/components/template/profile-dialogs';
 import { useConnectedGamepads } from '@/hooks/use-connected-gamepads';
 import { useDisclosure } from '@/hooks/use-disclosure';
 import { Mapping, Profile, useSettingsStore } from '@/hooks/use-settings-store';
-import { cn } from '@/lib/utils';
 import {
   decodeAnalogKeyboardConfig,
   decodeMouseMoveConfig,
@@ -27,6 +25,7 @@ import {
   RIGHT_STICK_MOTION_ID,
   StickMappingMode
 } from '@/lib/mapping-utils';
+import { cn } from '@/lib/utils';
 import { invoke } from '@tauri-apps/api/core';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
@@ -52,105 +51,6 @@ interface ConnectedGamepad {
 }
 
 type TabType = 'bindings' | 'live';
-
-interface StickMotionCardProps {
-  title: string;
-  description: string;
-  mode: StickMappingMode;
-  keyboardConfig: {
-    up: string;
-    left: string;
-    down: string;
-    right: string;
-  };
-  mouseConfig: {
-    sensitivity: number;
-  };
-  onModeChange: (mode: StickMappingMode) => void;
-  onKeyboardChange: (key: 'up' | 'left' | 'down' | 'right', value: string) => void;
-  onMouseSensitivityChange: (value: number) => void;
-}
-
-function StickMotionCard({
-  title,
-  description,
-  mode,
-  keyboardConfig,
-  mouseConfig,
-  onModeChange,
-  onKeyboardChange,
-  onMouseSensitivityChange
-}: StickMotionCardProps) {
-  return (
-    <Card className="border-border-main/50 bg-zinc-950/20 p-4 space-y-4">
-      <div className="flex flex-col gap-1">
-        <h4 className="text-sm font-semibold text-zinc-100">{title}</h4>
-        <p className="text-xs text-zinc-500 leading-relaxed">{description}</p>
-      </div>
-
-      <div className="space-y-3">
-        <div className="space-y-1.5">
-          <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
-            Mode
-          </span>
-          <Select
-            value={mode}
-            onChange={onModeChange}
-            options={[
-              { value: 'off', label: 'Off' },
-              { value: 'keyboard', label: 'Keyboard movement' },
-              { value: 'mouse', label: 'Mouse movement' }
-            ]}
-          />
-        </div>
-
-        {mode === 'keyboard' && (
-          <div className="grid grid-cols-2 gap-3">
-            {(
-              [
-                ['up', 'Up'],
-                ['left', 'Left'],
-                ['down', 'Down'],
-                ['right', 'Right']
-              ] as const
-            ).map(([key, label]) => (
-              <label key={key} className="space-y-1.5">
-                <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
-                  {label}
-                </span>
-                <Input
-                  maxLength={12}
-                  value={keyboardConfig[key]}
-                  onChange={(event) =>
-                    onKeyboardChange(key, event.target.value.toUpperCase())
-                  }
-                  placeholder={label}
-                />
-              </label>
-            ))}
-          </div>
-        )}
-
-        {mode === 'mouse' && (
-          <label className="space-y-1.5 block">
-            <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
-              Sensitivity
-            </span>
-            <Input
-              type="number"
-              min={1}
-              max={50}
-              value={String(mouseConfig.sensitivity)}
-              onChange={(event) =>
-                onMouseSensitivityChange(Number(event.target.value) || 1)
-              }
-            />
-          </label>
-        )}
-      </div>
-    </Card>
-  );
-}
 
 const EMPTY_PROFILE: Profile = {
   name: 'Default',
@@ -202,6 +102,7 @@ export function Remap() {
 
   const [activeTab, setActiveTab] = useState<TabType>('bindings');
   const [engineRunning, setEngineRunning] = useState(false);
+  const [selectedStickId, setSelectedStickId] = useState<number | null>(null);
   const previousGamepadsRef = useRef<ConnectedGamepad[] | null>(null);
 
   const {
@@ -213,6 +114,11 @@ export function Remap() {
   const [recordingTarget, setRecordingTarget] = useState<{
     buttonId: number;
     label: string;
+  } | null>(null);
+
+  const [recordingStickDirection, setRecordingStickDirection] = useState<{
+    stickId: number;
+    direction: 'up' | 'left' | 'down' | 'right';
   } | null>(null);
 
   const createDialog = useDisclosure(false);
@@ -464,7 +370,10 @@ export function Remap() {
   const updateStickMode = async (
     buttonId: number,
     mode: StickMappingMode,
-    defaults: { keyboard: typeof DEFAULT_ANALOG_KEYBOARD_CONFIG; mouse: typeof DEFAULT_MOUSE_MOVE_CONFIG }
+    defaults: {
+      keyboard: typeof DEFAULT_ANALOG_KEYBOARD_CONFIG;
+      mouse: typeof DEFAULT_MOUSE_MOVE_CONFIG;
+    }
   ) => {
     if (mode === 'off') {
       await onDeleteMapping(buttonId);
@@ -503,10 +412,7 @@ export function Remap() {
     });
   };
 
-  const updateMouseSensitivity = async (
-    buttonId: number,
-    value: number
-  ) => {
+  const updateMouseSensitivity = async (buttonId: number, value: number) => {
     await upsertMapping({
       button_id: buttonId,
       key_str: encodeMouseMoveConfig({
@@ -515,6 +421,49 @@ export function Remap() {
       mapping_type: 'MouseMove'
     });
   };
+
+  useEffect(() => {
+    if (!recordingStickDirection) return;
+
+    const onKeyDown = async (event: KeyboardEvent) => {
+      event.preventDefault();
+
+      const raw =
+        event.key.length === 1
+          ? event.key.toUpperCase()
+          : event.code
+              .replace(/^Key/, '')
+              .replace(/^Digit/, '')
+              .replace(/^Arrow/, '');
+      const keyStr = raw === ' ' ? 'SPACE' : raw.toUpperCase();
+
+      const { stickId, direction } = recordingStickDirection;
+      const motionId =
+        stickId === 11 ? LEFT_STICK_MOTION_ID : RIGHT_STICK_MOTION_ID;
+      const currentConfig =
+        stickId === 11 ? leftKeyboardConfig : rightKeyboardConfig;
+
+      await updateAnalogKeyboardKey(motionId, currentConfig, direction, keyStr);
+
+      window.dispatchEvent(
+        new CustomEvent('engine-log-add', {
+          detail: `${t('logs.remappedPrefix')} ${stickId === 11 ? 'Left Stick' : 'Right Stick'} ${direction.toUpperCase()} ${t('logs.to')} ${keyStr}`
+        })
+      );
+      setRecordingStickDirection(null);
+    };
+
+    window.addEventListener('keydown', onKeyDown, { once: true });
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [
+    recordingStickDirection,
+    active,
+    leftKeyboardConfig,
+    rightKeyboardConfig,
+    t
+  ]);
 
   return (
     <>
@@ -809,7 +758,11 @@ export function Remap() {
                   onButtonPress={() => {}}
                   mappings={active.mappings}
                   onControlSelect={(buttonId, label) => {
-                    setRecordingTarget({ buttonId, label });
+                    if (buttonId === 11 || buttonId === 12) {
+                      setSelectedStickId(buttonId);
+                    } else {
+                      setRecordingTarget({ buttonId, label });
+                    }
                   }}
                   engineRunning={engineRunning}
                 />
@@ -843,6 +796,256 @@ export function Remap() {
                   </Button>
                 </div>
               )}
+
+              {/* Stick Configuration Overlay */}
+              {selectedStickId !== null && (
+                <div className="absolute inset-0 bg-zinc-950/85 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in z-20 rounded-2xl">
+                  <div className="w-full max-w-sm bg-zinc-900 border border-border-main/80 rounded-2xl p-5 text-left shadow-2xl space-y-4">
+                    {/* Header */}
+                    <div className="flex items-center justify-between pb-2.5 border-b border-border-main/30">
+                      <div className="flex items-center gap-2">
+                        <Sliders className="w-4 h-4 text-primary" />
+                        <h3 className="text-xs font-bold text-zinc-100 uppercase tracking-wider">
+                          {selectedStickId === 11
+                            ? 'Left Stick Settings'
+                            : 'Right Stick Settings'}
+                        </h3>
+                      </div>
+                      <button
+                        onClick={() => setSelectedStickId(null)}
+                        className="text-zinc-400 hover:text-zinc-200 transition cursor-pointer p-0.5 rounded-lg hover:bg-zinc-800"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    {/* Stick Click (L3 / R3 Button) Section */}
+                    <div className="space-y-2">
+                      <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">
+                        Stick Button (Click)
+                      </span>
+                      <div className="flex items-center justify-between bg-zinc-950/60 border border-border-main/40 rounded-xl p-2.5">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-[9px] text-zinc-500 font-semibold uppercase tracking-wider">
+                            Current Mapping
+                          </span>
+                          <span className="font-mono text-xs font-bold text-zinc-200">
+                            {(() => {
+                              const clickMapping = active.mappings.find(
+                                (m) => m.button_id === selectedStickId
+                              );
+                              return clickMapping
+                                ? clickMapping.key_str
+                                : 'UNMAPPED';
+                            })()}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {active.mappings.some(
+                            (m) => m.button_id === selectedStickId
+                          ) && (
+                            <Button
+                              variant="secondary"
+                              className="p-0 h-8 w-8 text-red-400 hover:text-red-300 border-red-500/10 hover:border-red-500/30 hover:bg-red-500/5 rounded-lg transition"
+                              onClick={() => {
+                                void onDeleteMapping(selectedStickId);
+                              }}
+                              title="Remove binding"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          )}
+                          <Button
+                            variant="secondary"
+                            className="px-3 h-8 text-[11px] font-bold hover:border-zinc-500 rounded-lg transition"
+                            onClick={() => {
+                              const label =
+                                selectedStickId === 11
+                                  ? 'Left Stick Click'
+                                  : 'Right Stick Click';
+                              const id = selectedStickId;
+                              setSelectedStickId(null);
+                              setRecordingTarget({ buttonId: id, label });
+                            }}
+                          >
+                            <Pencil className="w-3 h-3 mr-1.5" />
+                            Rebind
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Stick Motion Mode Section */}
+                    <div className="space-y-2.5">
+                      <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">
+                        Stick Motion Mapping
+                      </span>
+                      <div className="space-y-3 bg-zinc-950/60 border border-border-main/40 rounded-xl p-3">
+                        <div className="space-y-1">
+                          <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider block">
+                            Motion Mode
+                          </span>
+                          <Select
+                            value={
+                              selectedStickId === 11
+                                ? leftStickMode
+                                : rightStickMode
+                            }
+                            onChange={(mode) => {
+                              const motionId =
+                                selectedStickId === 11
+                                  ? LEFT_STICK_MOTION_ID
+                                  : RIGHT_STICK_MOTION_ID;
+                              const currentKeyboardConfig =
+                                selectedStickId === 11
+                                  ? leftKeyboardConfig
+                                  : rightKeyboardConfig;
+                              const currentMouseConfig =
+                                selectedStickId === 11
+                                  ? leftMouseConfig
+                                  : rightMouseConfig;
+                              void updateStickMode(motionId, mode, {
+                                keyboard: currentKeyboardConfig,
+                                mouse: currentMouseConfig
+                              });
+                            }}
+                            options={[
+                              { value: 'off', label: 'Off' },
+                              {
+                                value: 'keyboard',
+                                label: 'Keyboard Movement (WASD)'
+                              },
+                              { value: 'mouse', label: 'Mouse Movement (Look)' }
+                            ]}
+                          />
+                        </div>
+
+                        {/* Keyboard config inputs */}
+                        {(selectedStickId === 11
+                          ? leftStickMode
+                          : rightStickMode) === 'keyboard' && (
+                          <div className="space-y-2 pt-1 border-t border-border-main/20">
+                            <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider block">
+                              Directions
+                            </span>
+                            <div className="grid grid-cols-2 gap-2">
+                              {(
+                                [
+                                  ['up', 'Up'],
+                                  ['left', 'Left'],
+                                  ['down', 'Down'],
+                                  ['right', 'Right']
+                                ] as const
+                              ).map(([key, label]) => {
+                                const motionId =
+                                  selectedStickId === 11
+                                    ? LEFT_STICK_MOTION_ID
+                                    : RIGHT_STICK_MOTION_ID;
+                                const currentConfig =
+                                  selectedStickId === 11
+                                    ? leftKeyboardConfig
+                                    : rightKeyboardConfig;
+                                const currentVal = currentConfig[key];
+                                const isRecordingThisDirection =
+                                  recordingStickDirection?.stickId ===
+                                    selectedStickId &&
+                                  recordingStickDirection?.direction === key;
+
+                                return (
+                                  <div key={key} className="space-y-1 block">
+                                    <span className="text-[9px] text-zinc-500 font-semibold uppercase">
+                                      {label}
+                                    </span>
+                                    <div className="flex items-center gap-1.5">
+                                      <Button
+                                        variant="secondary"
+                                        onClick={() =>
+                                          setRecordingStickDirection({
+                                            stickId: selectedStickId,
+                                            direction: key
+                                          })
+                                        }
+                                        className={cn(
+                                          'flex-1 h-8 px-2.5 font-mono text-xs font-bold rounded-lg border text-center transition',
+                                          isRecordingThisDirection
+                                            ? 'border-primary bg-primary/10 text-primary-text animate-pulse'
+                                            : currentVal === 'NONE'
+                                              ? 'border-dashed border-border-main/50 text-zinc-500 hover:border-zinc-400 bg-zinc-950/20'
+                                              : 'border-border-main hover:border-zinc-500 text-zinc-200 bg-zinc-950/40'
+                                        )}
+                                      >
+                                        {isRecordingThisDirection
+                                          ? 'Press Key...'
+                                          : currentVal === 'NONE'
+                                            ? 'Unmapped'
+                                            : currentVal}
+                                      </Button>
+                                      {currentVal !== 'NONE' && (
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            void updateAnalogKeyboardKey(
+                                              motionId,
+                                              currentConfig,
+                                              key,
+                                              'NONE'
+                                            )
+                                          }
+                                          className="p-1 h-8 w-8 flex items-center justify-center text-zinc-500 hover:text-red-400 hover:bg-red-500/10 border border-border-main/40 hover:border-red-500/25 rounded-lg transition shrink-0 cursor-pointer"
+                                          title="Unmap direction"
+                                        >
+                                          <X className="w-3.5 h-3.5" />
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Mouse config sensitivity */}
+                        {(selectedStickId === 11
+                          ? leftStickMode
+                          : rightStickMode) === 'mouse' && (
+                          <div className="space-y-2 pt-1 border-t border-border-main/20">
+                            <Slider
+                              label="Sensitivity"
+                              min={1}
+                              max={50}
+                              value={
+                                (selectedStickId === 11
+                                  ? leftMouseConfig
+                                  : rightMouseConfig
+                                ).sensitivity
+                              }
+                              onChange={(value) => {
+                                const motionId =
+                                  selectedStickId === 11
+                                    ? LEFT_STICK_MOTION_ID
+                                    : RIGHT_STICK_MOTION_ID;
+                                void updateMouseSensitivity(motionId, value);
+                              }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Footer Actions */}
+                    <div className="flex justify-end pt-1">
+                      <Button
+                        variant="secondary"
+                        onClick={() => setSelectedStickId(null)}
+                        className="px-4 py-1.5 hover:border-zinc-500 text-zinc-300 hover:text-zinc-100 rounded-lg text-xs font-semibold"
+                      >
+                        Done
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </Card>
 
             {/* Key Bindings & Diagnostics Card */}
@@ -863,64 +1066,6 @@ export function Remap() {
               >
                 {activeTab === 'bindings' ? (
                   <div className="space-y-5">
-                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                      <StickMotionCard
-                        title="Left Stick Motion"
-                        description="Use the left analog stick for WASD-style movement or continuous mouse movement."
-                        mode={leftStickMode}
-                        keyboardConfig={leftKeyboardConfig}
-                        mouseConfig={leftMouseConfig}
-                        onModeChange={(mode) =>
-                          void updateStickMode(LEFT_STICK_MOTION_ID, mode, {
-                            keyboard: leftKeyboardConfig,
-                            mouse: leftMouseConfig
-                          })
-                        }
-                        onKeyboardChange={(key, value) =>
-                          void updateAnalogKeyboardKey(
-                            LEFT_STICK_MOTION_ID,
-                            leftKeyboardConfig,
-                            key,
-                            value
-                          )
-                        }
-                        onMouseSensitivityChange={(value) =>
-                          void updateMouseSensitivity(
-                            LEFT_STICK_MOTION_ID,
-                            value
-                          )
-                        }
-                      />
-
-                      <StickMotionCard
-                        title="Right Stick Motion"
-                        description="Use the right analog stick for directional keys or mouse-look style movement."
-                        mode={rightStickMode}
-                        keyboardConfig={rightKeyboardConfig}
-                        mouseConfig={rightMouseConfig}
-                        onModeChange={(mode) =>
-                          void updateStickMode(RIGHT_STICK_MOTION_ID, mode, {
-                            keyboard: rightKeyboardConfig,
-                            mouse: rightMouseConfig
-                          })
-                        }
-                        onKeyboardChange={(key, value) =>
-                          void updateAnalogKeyboardKey(
-                            RIGHT_STICK_MOTION_ID,
-                            rightKeyboardConfig,
-                            key,
-                            value
-                          )
-                        }
-                        onMouseSensitivityChange={(value) =>
-                          void updateMouseSensitivity(
-                            RIGHT_STICK_MOTION_ID,
-                            value
-                          )
-                        }
-                      />
-                    </div>
-
                     <MappingsList
                       mappings={active.mappings}
                       onDeleteMapping={onDeleteMapping}

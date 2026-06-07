@@ -1,15 +1,13 @@
 import { Input } from '@/components/common/input';
 import { Mapping } from '@/hooks/use-settings-store';
 import {
-  formatMappingValue,
-  getStickMotionLabel
+  formatMappingValue
 } from '@/lib/mapping-utils';
 import {
   Gamepad as GamepadIcon,
   Search,
   Trash2,
-  X,
-  Zap
+  X
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -32,8 +30,8 @@ export const buttonLabelMap: Record<number, string> = {
   14: 'D-Down',
   15: 'D-Left',
   16: 'D-Right',
-  100: 'L-Stick Move',
-  101: 'R-Stick Move'
+  100: 'LS Move',
+  101: 'RS Move'
 };
 
 interface MappingsListProps {
@@ -55,7 +53,7 @@ export function MappingsList({
     const query = bindingsQuery.toLowerCase();
     return mappings.filter((map) => {
       const btnLabel = (
-        getStickMotionLabel(map.button_id) || buttonLabelMap[map.button_id] || ''
+        buttonLabelMap[map.button_id] || ''
       ).toLowerCase();
       const keyStr = formatMappingValue(map).toLowerCase();
       return btnLabel.includes(query) || keyStr.includes(query);
@@ -104,15 +102,11 @@ export function MappingsList({
         <div className="space-y-3">
           {/* Table Header */}
           <div className="grid grid-cols-12 text-xs font-bold text-zinc-500 uppercase tracking-widest px-5 mb-2.5">
-            <div className="col-span-3">
+            <div className="col-span-4">
               {t('bindings.headerGamepadControl')}
             </div>
-            <div className="col-span-1 text-center"></div>
-            <div className="col-span-3">
+            <div className="col-span-6">
               {t('bindings.headerMappedKey')}
-            </div>
-            <div className="col-span-3">
-              {t('bindings.headerType')}
             </div>
             <div className="col-span-2 text-right">
               {t('bindings.headerAction')}
@@ -127,31 +121,18 @@ export function MappingsList({
                 className="grid grid-cols-12 items-center bg-zinc-900/25 hover:bg-zinc-900/45 border border-border-main/30 hover:border-border-hover rounded-xl px-5 py-3 transition duration-150 group/row shadow-sm"
               >
                 {/* Gamepad Input */}
-                <div className="col-span-3 flex items-center">
-                  <span className="inline-flex items-center justify-center min-w-10 h-7 px-2.5 rounded-full bg-primary-bg border border-primary-border/80 text-primary-text font-bold text-xs uppercase shadow-sm">
-                    {getStickMotionLabel(map.button_id) ||
-                      buttonLabelMap[map.button_id] ||
+                <div className="col-span-4 flex items-center">
+                  <span className="inline-flex items-center justify-center min-w-10 h-7 px-2.5 rounded-full bg-primary-bg border border-primary-border/80 text-primary-text font-bold text-xs uppercase whitespace-nowrap shadow-sm">
+                    {buttonLabelMap[map.button_id] ||
                       `Button ${map.button_id}`}
                   </span>
                 </div>
 
-                {/* Visual Connector */}
-                <div className="col-span-1 flex items-center justify-center">
-                  <Zap className="w-3 h-3 text-zinc-600 group-hover/row:text-primary-text transition-colors duration-300" />
-                </div>
-
                 {/* Mapped Keyboard Keycap */}
-                <div className="col-span-3 flex items-center">
+                <div className="col-span-6 flex items-center">
                   <kbd className="min-w-[32px] h-7 px-2.5 flex items-center justify-center rounded-lg bg-zinc-950 border border-zinc-700 text-zinc-100 text-xs font-mono font-bold shadow-md shadow-black/60 uppercase">
                     {formatMappingValue(map)}
                   </kbd>
-                </div>
-
-                {/* Mapping Type Tag */}
-                <div className="col-span-3">
-                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-zinc-950 text-zinc-400 border border-border-main/40 uppercase tracking-wider">
-                    {map.mapping_type}
-                  </span>
                 </div>
 
                 {/* Action Column */}

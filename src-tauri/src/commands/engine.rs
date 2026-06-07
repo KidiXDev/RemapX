@@ -184,6 +184,13 @@ fn update_direction_key(
     pressed_key: &mut Option<String>,
     app: &AppHandle,
 ) {
+    if key == "NONE" || key.is_empty() {
+        if let Some(previous) = pressed_key.clone() {
+            update_direction_key(&previous, false, pressed_key, app);
+        }
+        return;
+    }
+
     if should_press {
         if pressed_key.as_deref() == Some(key) {
             return;
