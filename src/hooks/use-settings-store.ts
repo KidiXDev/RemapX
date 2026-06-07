@@ -33,6 +33,7 @@ interface SettingsState {
   runOnBoot: boolean;
   startMinimized: boolean;
   minimizeToTray: boolean;
+  autoCheckUpdates: boolean;
   developerMode: boolean;
   debounce: number;
   theme: ThemeType;
@@ -43,6 +44,7 @@ interface SettingsState {
   setRunOnBoot: (val: boolean) => Promise<void>;
   setStartMinimized: (val: boolean) => Promise<void>;
   setMinimizeToTray: (val: boolean) => Promise<void>;
+  setAutoCheckUpdates: (val: boolean) => Promise<void>;
   setDeveloperMode: (val: boolean) => Promise<void>;
   setDebounce: (val: number) => Promise<void>;
   setTheme: (theme: ThemeType) => Promise<void>;
@@ -79,6 +81,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   runOnBoot: false,
   startMinimized: false,
   minimizeToTray: true,
+  autoCheckUpdates: true,
   developerMode: false,
   debounce: 10,
   theme: 'dark',
@@ -109,6 +112,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
       runOnBoot: isPortable ? false : parseBool(values.runOnBoot, false),
       startMinimized: parseBool(values.startMinimized, false),
       minimizeToTray: parseBool(values.minimizeToTray, true),
+      autoCheckUpdates: parseBool(values.autoCheckUpdates, true),
       developerMode: parseBool(values.developerMode, false),
       debounce: parseNum(values.debounce, 10),
       theme,
@@ -148,6 +152,11 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
     if (!val) {
       await invoke('save_setting', { key: 'startMinimized', value: 'false' });
     }
+  },
+
+  setAutoCheckUpdates: async (val) => {
+    set({ autoCheckUpdates: val });
+    await invoke('save_setting', { key: 'autoCheckUpdates', value: String(val) });
   },
 
   setDeveloperMode: async (val) => {

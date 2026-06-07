@@ -4,66 +4,58 @@ import { Select } from '@/components/common/select';
 import { ContentLayout } from '@/components/layout/content-layout';
 import { useConfirm } from '@/components/providers/confirmation-provider';
 import {
+  cacheAvailableUpdate,
+  checkForAppUpdate,
+  clearCachedAvailableUpdate,
+  getCachedAvailableUpdateTag
+} from '@/lib/app-update';
+import {
   LocaleType,
   ThemeType,
   useSettingsStore
 } from '@/hooks/use-settings-store';
 import { Check } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 export function Settings() {
   const { t } = useTranslation('settings');
   const confirm = useConfirm();
   const [isChecking, setIsChecking] = useState(false);
+  const [cachedUpdateTag, setCachedUpdateTag] = useState<string | null>(null);
   const {
     isPortable,
     runOnBoot,
     startMinimized,
     minimizeToTray,
+    autoCheckUpdates,
     developerMode,
     locale,
     theme,
     setRunOnBoot,
     setStartMinimized,
     setMinimizeToTray,
+    setAutoCheckUpdates,
     setDeveloperMode,
     setLocale,
     setTheme
   } = useSettingsStore();
 
+  useEffect(() => {
+    setCachedUpdateTag(getCachedAvailableUpdateTag());
+  }, []);
+
   const handleCheckUpdate = async () => {
     setIsChecking(true);
     try {
-      const response = await fetch(
-        'https://api.github.com/repos/KidiXDev/RemapX/releases/latest'
-      );
-      if (!response.ok) {
-        throw new Error('Failed to fetch');
-      }
-      const data = await response.json();
-      const latestTag = data.tag_name;
+      const { latestTag, hasUpdate } = await checkForAppUpdate({
+        treatDevAsUpdate: true
+      });
 
-      const cleanVersion = (v: string) => v.replace(/^v/, '').trim();
-      const current = cleanVersion(__APP_VERSION__);
-      const latest = cleanVersion(latestTag);
+      if (hasUpdate) {
+        cacheAvailableUpdate(latestTag);
+        setCachedUpdateTag(latestTag);
 
-      const isNewer = (curr: string, lat: string) => {
-        if (curr === 'dev') return true; // Allow local testing
-
-        const curParts = curr.split('.').map(Number);
-        const latParts = lat.split('.').map(Number);
-
-        for (let i = 0; i < Math.max(curParts.length, latParts.length); i++) {
-          const curVal = curParts[i] || 0;
-          const latVal = latParts[i] || 0;
-          if (latVal > curVal) return true;
-          if (curVal > latVal) return false;
-        }
-        return false;
-      };
-
-      if (isNewer(current, latest)) {
         const wantsDownload = await confirm({
           title: t('updateAvailableTitle'),
           description: t('updateAvailableDesc', { version: latestTag }),
@@ -82,6 +74,9 @@ export function Settings() {
           }
         }
       } else {
+        clearCachedAvailableUpdate();
+        setCachedUpdateTag(null);
+
         await confirm({
           title: t('noUpdateTitle'),
           description: t('noUpdateDesc'),
@@ -291,12 +286,34 @@ export function Settings() {
         {/* About App Card */}
         <Card title={t('aboutCardTitle')}>
           <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <label className="text-xs font-semibold text-zinc-200">
+                  {t('autoCheckUpdates.label')}
+                </label>
+                <p className="text-xs text-zinc-500">
+                  {t('autoCheckUpdates.description')}
+                </p>
+              </div>
+              <ToggleSwitch
+                checked={autoCheckUpdates}
+                onChange={setAutoCheckUpdates}
+              />
+            </div>
+
+            <div className="h-px bg-border-main/40" />
+
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-zinc-200">RemapX</span>
                 <span className="text-xs font-mono font-semibold text-zinc-400 bg-zinc-900 px-2 py-0.5 rounded border border-border-main">
                   {__APP_VERSION__}
                 </span>
+                {cachedUpdateTag && (
+                  <span className="text-[10px] font-bold uppercase tracking-wide text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30">
+                    {t('updateBadge', { version: cachedUpdateTag })}
+                  </span>
+                )}
               </div>
               <Button
                 variant="secondary"

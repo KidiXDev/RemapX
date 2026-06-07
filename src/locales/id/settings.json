@@ -39,10 +39,15 @@
     }
   },
   "aboutCardTitle": "Tentang RemapX",
+  "autoCheckUpdates": {
+    "label": "Periksa Pembaruan Otomatis",
+    "description": "Periksa rilis RemapX terbaru secara otomatis sekali per hari saat aplikasi dibuka."
+  },
   "appVersionLabel": "Versi Aplikasi",
   "appVersionDescription": "Versi rilis aplikasi yang saat ini terpasang.",
   "checkUpdate": "Periksa Pembaruan",
   "checkingUpdate": "Memeriksa...",
+  "updateBadge": "Update {{version}}",
   "noUpdateTitle": "Versi Terbaru",
   "noUpdateDesc": "Anda sudah menggunakan versi terbaru RemapX.",
   "updateAvailableTitle": "Pembaruan Tersedia",

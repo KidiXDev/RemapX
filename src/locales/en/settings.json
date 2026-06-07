@@ -39,10 +39,15 @@
     }
   },
   "aboutCardTitle": "About RemapX",
+  "autoCheckUpdates": {
+    "label": "Auto Check for Updates",
+    "description": "Check for new RemapX releases automatically once per day when the app starts."
+  },
   "appVersionLabel": "Application Version",
   "appVersionDescription": "The currently installed version of RemapX.",
   "checkUpdate": "Check for Updates",
   "checkingUpdate": "Checking...",
+  "updateBadge": "Update {{version}}",
   "noUpdateTitle": "Up to Date",
   "noUpdateDesc": "You are running the latest version of RemapX.",
   "updateAvailableTitle": "Update Available",
